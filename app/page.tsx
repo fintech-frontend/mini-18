@@ -1,9 +1,18 @@
-import React from 'react'
+import { HeroBanner } from "@/components/sections/HeroBanner";
+import { FeaturesBar } from "@/components/sections/FeaturesBar";
+import { CategoryGrid } from "@/components/sections/CategoryGrid";
+import { PromoBanners } from "@/components/sections/PromoBanners";
+import { HitsSection } from "@/components/sections/HitsSection";
+import { mockProducts } from "@/data/products";
 
-function Home() {
+export default function Home() {
   return (
-    <div>Home</div>
-  )
+    <>
+      <HeroBanner />
+      <FeaturesBar />
+      <CategoryGrid />
+      <PromoBanners />
+      <HitsSection products={mockProducts} />
+    </>
+  );
 }
-
-export default Home
