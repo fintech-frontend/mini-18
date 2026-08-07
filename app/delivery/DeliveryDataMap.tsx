@@ -81,14 +81,6 @@ function DeliveryDataMap() {
             {method.title}
           </h3>
 
-          {method.paragraphs && (
-            <div className="flex flex-col gap-4 mb-4">
-              {method.paragraphs.map((p, idx) => (
-                <p key={idx}>{p}</p>
-              ))}
-            </div>
-          )}
-
           {method.subtitle && (
             <p className="font-semibold text-[#2C333D] mb-3">
               {method.subtitle}
@@ -104,6 +96,14 @@ function DeliveryDataMap() {
                 </li>
               ))}
             </ul>
+          )}
+
+          {method.paragraphs && (
+            <div className="flex flex-col gap-4 mb-4">
+              {method.paragraphs.map((p, idx) => (
+                <p key={idx}>{p}</p>
+              ))}
+            </div>
           )}
         </div>
       ))}
