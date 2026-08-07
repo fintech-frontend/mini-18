@@ -38,7 +38,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${helvetica.variable}`}
     >
-      <body>{children}</body>
+      <body >{children}</body>
     </html>
   );
 }
