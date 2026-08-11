@@ -1,6 +1,5 @@
-import Kontakt from '@/kontakt/page'
 import OCompny from '@/oCompny/page'
-
+import React from 'react'
 
 function Home() {
   return (
