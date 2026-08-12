@@ -7,4 +7,6 @@ export interface Product {
   discountPercentage?: number;
   imageUrl: string;
   isHit?: boolean;
+  section?: "hits" | "best";
+  category?: "instruments" | "santehnika" | "home" | "garden";
 }

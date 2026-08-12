@@ -3,6 +3,7 @@ import { mockProducts } from "@/data/products";
 import ProductDetail from "@/components/ui/ProductDetail";
 import ProductList from "@/components/ui/ProductList";
 import Container from "@/components/ui/Container";
+import { styles } from "@/styles/index.styles";
 
 export default async function ProductPage({
   params,
@@ -19,12 +20,14 @@ export default async function ProductPage({
 
   return (
     <>
-      <Container className="py-4 sm:py-8">
-        <ProductDetail product={product} />
-      </Container>
+      <div className={`${styles.container} mt-10`}>
 
-      <ProductList products={related} title="Похожие товары" />
-      <ProductList products={related} title="С этим товаром покупают" />
+        <ProductDetail product={product} />
+
+
+        <ProductList products={related} title="Похожие товары" />
+        <ProductList products={related} title="С этим товаром покупают" />
+      </div>
     </>
   );
 }

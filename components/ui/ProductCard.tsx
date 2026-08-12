@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Heart, BarChart2, ShoppingCart } from "lucide-react";
 import { Product } from "@/types/product";
+import { useFavorites } from "@/context/FavoritesContext";
+import { useCompare } from "@/context/CompareContext";
 
 export default function ProductCard({ product }: { product: Product }) {
   const {
@@ -16,6 +18,12 @@ export default function ProductCard({ product }: { product: Product }) {
     imageUrl,
     isHit,
   } = product;
+
+  const { toggleFavorite, isFavorite } = useFavorites();
+  const { toggleCompare, isInCompare } = useCompare();
+
+  const favorite = isFavorite(id);
+  const inCompare = isInCompare(id);
 
   return (
     <div className="group flex flex-col rounded-xl border border-gray-200 bg-white p-3 transition-shadow hover:shadow-md sm:p-4">
@@ -73,15 +81,25 @@ export default function ProductCard({ product }: { product: Product }) {
         </Link>
         <button
           type="button"
-          aria-label="В избранное"
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition-colors hover:border-red-300 hover:text-red-500"
+          onClick={() => toggleFavorite(product)}
+          aria-label={favorite ? "Убрать из избранного" : "В избранное"}
+          className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${
+            favorite
+              ? "border-red-300 bg-red-50 text-red-500"
+              : "border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-500"
+          }`}
         >
-          <Heart size={16} />
+          <Heart size={16} fill={favorite ? "currentColor" : "none"} />
         </button>
         <button
           type="button"
-          aria-label="Сравнить"
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition-colors hover:border-blue-300 hover:text-blue-600"
+          onClick={() => toggleCompare(product)}
+          aria-label={inCompare ? "Убрать из сравнения" : "Сравнить"}
+          className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${
+            inCompare
+              ? "border-blue-300 bg-blue-50 text-blue-600"
+              : "border-gray-200 text-gray-500 hover:border-blue-300 hover:text-blue-600"
+          }`}
         >
           <BarChart2 size={16} />
         </button>
