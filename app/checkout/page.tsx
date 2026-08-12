@@ -1,11 +1,11 @@
 import React from 'react'
 
-function Home() {
+function checkout() {
   return (
     <div>
-
+      
     </div>
   )
 }
 
-export default Home
+export default checkout

@@ -3,6 +3,11 @@ import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 
+import CartDiscountBanner from "@/components/CartDiscountBanner";
+import Header from "@/components/navbar/page";
+import FooterWithMenu from "@/components/footer/page";
+import { styles } from "@/styles/index.styles";
+
 const helvetica = localFont({
   src: [
     {
@@ -38,7 +43,18 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${helvetica.variable}`}
     >
-      <body>{children}</body>
+      {/* Barcha visual komponentlar <body> va </body> oralig'ida bo'lishi shart:
+      */}
+      <body className={`${styles.container}min-h-screen flex flex-col antialiased`}>
+        <Header />
+        <CartDiscountBanner />
+        
+        <main className="flex-1">
+          {children}
+        </main>
+
+        <FooterWithMenu />
+      </body>
     </html>
   );
 }

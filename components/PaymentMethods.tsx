@@ -1,11 +1,11 @@
 import React from 'react'
 
-function Home() {
+function PaymentMethods() {
   return (
     <div>
-
+      
     </div>
   )
 }
 
-export default Home
+export default PaymentMethods
