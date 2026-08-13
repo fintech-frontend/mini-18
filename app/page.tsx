@@ -1,11 +1,9 @@
-import OCompny from '@/oCompny/page'
-import React from 'react'
+
 
 function Home() {
   return (
     <div>
-
-      <OCompny/>
+      <h1>Home page</h1>
     </div>
   )
 }
