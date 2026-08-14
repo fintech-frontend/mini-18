@@ -1,8 +1,18 @@
 import React from 'react'
+import OCompny from './Ocompany/page'
+import Kontakt from './kontakt/page'
+import Akcii from './akcii/page'
 
 function Home() {
   return (
-    <div>Home</div>
+    <div>
+
+
+      
+      <Kontakt/>
+      <OCompny/>
+      <Akcii/>
+    </div>
   )
 }
 
