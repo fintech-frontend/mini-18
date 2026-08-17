@@ -14,6 +14,9 @@ import {
   Percent,
 } from "lucide-react";
 import { Product } from "@/types/product";
+import { useCart } from "@/context/CartContext";
+import { useFavorites } from "@/context/FavoritesContext";
+import { useCompare } from "@/context/CompareContext";
 
 const TABS = ["Характеристики", "О товаре", "Доставка и оплата"] as const;
 
@@ -21,17 +24,22 @@ export default function ProductDetail({ product }: { product: Product }) {
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>("Характеристики");
 
+  const { addToCart } = useCart();
+  const { toggleFavorite, isFavorite } = useFavorites();
+  const { toggleCompare, isInCompare } = useCompare();
+
+  const favorite = isFavorite(product.id);
+  const inCompare = isInCompare(product.id);
+
   const gallery = [product.imageUrl, product.imageUrl, product.imageUrl, product.imageUrl];
 
-  // 1. O'rtadagi qisqa xususiyatlar ro'yxati
+  // 1. O'rtadagi qisqa xususiyatlar ro'yxati — endi haqiqiy productdan
   const mainSpecs = [
-    { label: "Тип товара", value: "Дрель-шуруповерт" },
-    { label: "Бренд", value: "MAKITA" },
-    { label: "Назначение инструмента", value: "профессиональный" },
-    { label: "Мощность (Вт)", value: "18" },
-    { label: "Емкость АКБ (А/ч)", value: "1,5" },
-    { label: "Крутящий момент макс. (Н/м)", value: "30" },
-    { label: "Напряжение аккумулятора (В)", value: "14,4" },
+    { label: "Тип товара", value: product.productType ?? "—" },
+    { label: "Бренд", value: product.brand ?? "—" },
+    ...Object.entries(product.specs ?? {})
+      .slice(0, 5)
+      .map(([label, value]) => ({ label, value })),
   ];
 
   // 2. Afzalliklar va servislar ro'yxati
@@ -42,6 +50,10 @@ export default function ProductDetail({ product }: { product: Product }) {
     { icon: Percent, text: "Делаем скидки на крупные покупки" },
   ];
 
+  const handleAddToCart = () => {
+    addToCart(product, qty);
+  };
+
   return (
     <div>
       <h1 className="mb-4 text-lg font-semibold text-gray-900 sm:mb-6 sm:text-2xl">
@@ -49,7 +61,7 @@ export default function ProductDetail({ product }: { product: Product }) {
       </h1>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* 1-USTUN: Gallery (4 ta ustun egallaydi) */}
+        {/* 1-USTUN: Gallery */}
         <div className="flex gap-3 lg:col-span-5">
           <div className="hidden flex-col gap-2 sm:flex">
             {gallery.map((src, i) => (
@@ -73,9 +85,8 @@ export default function ProductDetail({ product }: { product: Product }) {
           </div>
         </div>
 
-        {/* 2-USTUN: Xususiyatlar va Afzalliklar (4 ta ustun egallaydi) */}
+        {/* 2-USTUN: Xususiyatlar va Afzalliklar */}
         <div className="flex flex-col gap-5 lg:col-span-4">
-          {/* Nukatali xususiyatlar */}
           <div className="space-y-2.5 text-sm">
             {mainSpecs.map((spec, idx) => (
               <div key={idx} className="flex items-baseline justify-between gap-2">
@@ -93,7 +104,6 @@ export default function ProductDetail({ product }: { product: Product }) {
             </button>
           </div>
 
-          {/* Afzalliklar bloki */}
           <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4 space-y-3.5">
             {storeFeatures.map((item, idx) => {
               const Icon = item.icon;
@@ -111,7 +121,7 @@ export default function ProductDetail({ product }: { product: Product }) {
           </div>
         </div>
 
-        {/* 3-USTUN: Info & Narx paneli (3 ta ustun egallaydi) */}
+        {/* 3-USTUN: Info & Narx paneli */}
         <div className="flex flex-col gap-3 h-fit rounded-xl border border-gray-200 p-4 sm:p-5 lg:col-span-3">
           <p className="text-xs text-gray-400">Артикул: {product.article}</p>
           <p className="text-sm font-medium text-green-600">В наличии</p>
@@ -147,19 +157,35 @@ export default function ProductDetail({ product }: { product: Product }) {
             </div>
           </div>
 
-          <button className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
+          <button
+            onClick={handleAddToCart}
+            className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+          >
             <ShoppingCart size={16} />
             Добавить в корзину
           </button>
-          <button className="rounded-lg border border-blue-600 py-2.5 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">
+          <button
+            onClick={handleAddToCart}
+            className="rounded-lg border border-blue-600 py-2.5 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors"
+          >
             Купить в 1 клик
           </button>
 
           <div className="flex items-center justify-center gap-4 border-t border-gray-100 pt-3 text-sm text-gray-500">
-            <button className="flex items-center gap-1.5 hover:text-red-500 transition-colors">
-              <Heart size={16} /> В избранное
+            <button
+              onClick={() => toggleFavorite(product)}
+              className={`flex items-center gap-1.5 transition-colors ${
+                favorite ? "text-red-500" : "hover:text-red-500"
+              }`}
+            >
+              <Heart size={16} fill={favorite ? "currentColor" : "none"} /> В избранное
             </button>
-            <button className="flex items-center gap-1.5 hover:text-blue-600 transition-colors">
+            <button
+              onClick={() => toggleCompare(product)}
+              className={`flex items-center gap-1.5 transition-colors ${
+                inCompare ? "text-blue-600" : "hover:text-blue-600"
+              }`}
+            >
               <BarChart2 size={16} /> Сравнить
             </button>
           </div>
@@ -193,10 +219,11 @@ export default function ProductDetail({ product }: { product: Product }) {
             </h3>
             <div className="grid grid-cols-1 gap-x-12 gap-y-2 sm:grid-cols-2">
               {[
-                ["Тип товара", "Электроинструмент"],
-                ["Бренд", "MAKITA"],
+                ["Тип товара", product.productType ?? "—"],
+                ["Бренд", product.brand ?? "—"],
                 ["Артикул", product.article],
                 ["Цена", `${product.price.toLocaleString("ru-RU")} ₽`],
+                ...Object.entries(product.specs ?? {}),
               ].map(([label, value]) => (
                 <div
                   key={label}

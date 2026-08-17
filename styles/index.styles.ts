@@ -1,3 +1,3 @@
 export const styles = {
-  container: "mx-auto  lg:max-w-[1620px] w-[90%]",
-};
+    container: "lg:max-w[1620px] mx-auto w-[90%]"
+}

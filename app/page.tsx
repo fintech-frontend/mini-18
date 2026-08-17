@@ -15,18 +15,16 @@ export default function Home() {
   const bestProducts = mockProducts.filter((p) => p.section === "best");
 
   return (
-    <>
-      <div className={`${styles.container} mt-10`}>
-        <HeroBanner />
-        <FeaturesBar />
-        <CategoryGrid />
-        <PromoBanners />
-        <HitsSection products={hitsProducts} />
-        <BrandsCarousel />
-        <BestOffers products={bestProducts} />
-        <AboutStore />
-        <LatestNews />
-      </div>
-    </>
+    <div className={`${styles.container} mt-10`}>
+      <HeroBanner />
+      <FeaturesBar />
+      <CategoryGrid />
+      <PromoBanners />
+      <HitsSection products={hitsProducts} />
+      <BrandsCarousel />
+      <BestOffers products={bestProducts} />
+      <AboutStore />
+      <LatestNews />
+    </div>
   );
 }

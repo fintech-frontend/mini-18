@@ -9,4 +9,7 @@ export interface Product {
   isHit?: boolean;
   section?: "hits" | "best";
   category?: "instruments" | "santehnika" | "home" | "garden";
+  brand?: string;
+  productType?: string;
+  specs?: Record<string, string>;
 }
