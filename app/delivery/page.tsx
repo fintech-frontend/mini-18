@@ -7,7 +7,7 @@ import DeliveryDataMap from "./DeliveryDataMap";
 export default function DeliveryPage() {
   return (
     <section
-      className={`${styles.container} px-4 md:px-6 py-6 md:py-8 mx-auto max-w-[1600px]`}
+      className={`${styles.container} py-6 md:py-8`}
     >
       {/* Navigatsiya (Breadcrumb) */}
       <nav className="mb-4 md:mb-6 text-xs md:text-sm text-gray-400">
