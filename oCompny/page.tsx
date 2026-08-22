@@ -1,5 +1,5 @@
 import Image from "next/image";
-import OCompnyImg from "../assets/oCompnyImg.png";
+import OCompnyImg from "../assets/oComp.png";
 import iconOplata from "../assets/iconOplata.png";
 import iconTovar from "../assets/iconTovar.png";
 import iconBox from "../assets/iconBox.png";
