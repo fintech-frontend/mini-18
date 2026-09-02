@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+
 import { actions, getActionById } from "../actions-data";
 
 interface PageProps {
@@ -26,13 +27,13 @@ export default async function AkciyaDetailPage({
 
   return (
     <main className="min-h-screen bg-white">
-      <section className="mx-auto w-full max-w-[1080px] px-4 py-4 sm:px-6 lg:px-0">
+      <section className="mx-auto w-full max-w-270 px-0 py-4">
 
         {/* ================= BREADCRUMB ================= */}
-        <div className="mb-5 flex flex-wrap items-center gap-2 text-[10px] text-[#999] sm:text-[11px]">
+        <div className="mb-5 flex flex-wrap items-center gap-2 px-0 text-[10px] text-[#999] sm:text-[11px]">
           <Link
             href="/"
-            className="hover:text-[#0071ce]"
+            className="transition hover:text-[#0071ce]"
           >
             Стройдом
           </Link>
@@ -41,34 +42,31 @@ export default async function AkciyaDetailPage({
 
           <Link
             href="/akcii"
-            className="hover:text-[#0071ce]"
+            className="transition hover:text-[#0071ce]"
           >
             Акции
           </Link>
 
           <span>/</span>
 
-          <span className="max-w-[400px] truncate">
+          <span className="max-w-100 truncate">
             {action.title}
           </span>
         </div>
 
         {/* ================= TITLE ================= */}
-        <h1 className="mb-5 max-w-[900px] text-[27px] font-bold leading-[1.15] text-[#303640] sm:text-[32px] lg:text-[34px]">
+        <h1 className="mb-5 max-w-225 text-[27px] font-bold leading-[1.15] text-[#303640] sm:text-[32px] lg:text-[34px]">
           {action.title}
         </h1>
 
         {/* ================= CONTENT ================= */}
         <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_215px] lg:gap-3">
 
-          {/* =====================================================
-              LEFT
-          ====================================================== */}
+          {/* ================= LEFT ================= */}
           <article className="min-w-0">
 
             {/* Action status */}
-            <div className="flex min-h-[38px] items-center gap-3 border-2 border-[#168cf0] px-3 text-[10px] text-[#555] sm:text-[11px]">
-
+            <div className="flex min-h-9.5 items-center gap-3 px-3 text-[10px] text-[#555] sm:text-[11px]">
               <span className="font-medium text-[#333]">
                 Акция
               </span>
@@ -80,21 +78,17 @@ export default async function AkciyaDetailPage({
               <span>
                 Действует до {action.endDate}
               </span>
-
             </div>
 
             {/* Description */}
-            <div className="border-x-2 border-[#168cf0] px-3 py-3">
-              <p className="text-[11px] leading-[18px] text-[#333] sm:text-[12px] sm:leading-[20px]">
+            <div className="px-3 py-3">
+              <p className="text-[11px] leading-4.5 text-[#333] sm:text-[12px] sm:leading-5">
                 {action.fullDescription}
               </p>
             </div>
 
-            {/* =====================================================
-                MAIN IMAGE
-            ====================================================== */}
-            <div className="relative aspect-[16/8] w-full overflow-hidden border-2 border-[#168cf0]">
-
+            {/* ================= MAIN IMAGE ================= */}
+            <div className="relative aspect-16/8 w-full overflow-hidden">
               <Image
                 src={action.image}
                 alt={action.title}
@@ -103,30 +97,27 @@ export default async function AkciyaDetailPage({
                 sizes="(max-width: 1024px) 100vw, 830px"
                 className="object-cover"
               />
-
             </div>
 
-            {/* =====================================================
-                OFFER
-            ====================================================== */}
-            <div className="border-x-2 border-b-2 border-[#168cf0] px-3 py-4 sm:px-4 sm:py-5">
+            {/* ================= OFFER ================= */}
+            <div className="px-3 py-4 sm:px-4 sm:py-5">
 
               <h2 className="mb-3 text-[20px] font-bold leading-tight text-[#303640] sm:text-[23px]">
                 Что мы предлагаем:
               </h2>
 
-              <p className="mb-3 text-[11px] leading-[19px] text-[#333] sm:text-[12px] sm:leading-[21px]">
+              <p className="mb-3 text-[11px] leading-4.75 text-[#333] sm:text-[12px] sm:leading-5">
                 Широкий ассортимент качественных товаров для любых
                 поверхностей. Разнообразие цветов и оттенков, чтобы
                 удовлетворить самые изысканные вкусы.
               </p>
 
-              <p className="mb-3 text-[11px] leading-[19px] text-[#333] sm:text-[12px] sm:leading-[21px]">
+              <p className="mb-3 text-[11px] leading-4.75 text-[#333] sm:text-[12px] sm:leading-5">
                 Продукция от проверенных производителей,
                 гарантирующих долговечность и качество.
               </p>
 
-              <p className="mb-5 text-[11px] leading-[19px] text-[#333] sm:text-[12px] sm:leading-[21px]">
+              <p className="mb-5 text-[11px] leading-4.75 text-[#333] sm:text-[12px] sm:leading-5">
                 Используйте промокод{" "}
                 <span className="font-bold text-[#0071ce]">
                   LAKOART20
@@ -143,8 +134,7 @@ export default async function AkciyaDetailPage({
               </p>
 
               {/* Promo */}
-              <div className="inline-flex items-center gap-3 rounded border border-[#e5e7eb] bg-white px-3 py-2">
-
+              <div className="inline-flex items-center gap-3 bg-white px-3 py-2">
                 <span className="text-[11px] font-medium text-[#0071ce]">
                   LAKOART20
                 </span>
@@ -152,32 +142,37 @@ export default async function AkciyaDetailPage({
                 <button
                   type="button"
                   aria-label="Скопировать промокод"
-                  className="text-[13px] text-[#aaa] transition hover:text-[#333]"
+                  className="text-[13px] text-[#aaa] cursor-pointer transition hover:text-[#333]"
                 >
                   ⧉
                 </button>
-
               </div>
-
             </div>
 
-            {/* Back */}
+            {/* ================= BACK ================= */}
             <div className="py-7">
-
               <Link
                 href="/akcii"
-                className="inline-flex items-center rounded border border-[#071522] px-5 py-2.5 text-[12px] font-medium text-[#071522] transition hover:bg-[#071522] hover:text-white"
+                className="
+                  inline-flex
+                  items-center
+                  rounded
+                  px-5
+                  py-2.5
+                  text-[12px]
+                  font-medium
+                  text-[#071522]
+                  transition
+                  hover:bg-[#071522]
+                  hover:text-white
+                "
               >
                 ← Все акции
               </Link>
-
             </div>
-
           </article>
 
-          {/* =====================================================
-              RIGHT SIDEBAR
-          ====================================================== */}
+          {/* ================= RIGHT SIDEBAR ================= */}
           <aside className="space-y-5">
 
             {/* Other actions */}
@@ -187,8 +182,7 @@ export default async function AkciyaDetailPage({
                 href={`/akcii/${item.id}`}
                 className="group block"
               >
-
-                <div className="relative h-[140px] w-full overflow-hidden rounded-[5px] sm:h-[170px] lg:h-[180px]">
+                <div className="relative h-35 w-full overflow-hidden rounded-[5px] sm:h-42.5 lg:h-45">
 
                   <Image
                     src={item.image}
@@ -198,34 +192,28 @@ export default async function AkciyaDetailPage({
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
                   />
 
-                  {/* Dark discount */}
+                  {/* Discount */}
                   <div className="absolute bottom-3 left-3">
-
-                    <p className="max-w-[145px] text-[12px] font-medium leading-[15px] text-[#222] sm:text-[13px] sm:leading-[16px]">
+                    <p className="max-w-36.25 text-[12px] font-medium leading-3.75 text-[#222] sm:text-[13px] sm:leading-4">
                       {item.title}
                     </p>
 
                     <span className="mt-1 inline-block rounded-[3px] bg-black px-2 py-1 text-[9px] font-semibold text-white">
                       {item.discount}
                     </span>
-
                   </div>
-
                 </div>
-
               </Link>
             ))}
 
-            {/* =====================================================
-                NEWSLETTER
-            ====================================================== */}
+            {/* ================= NEWSLETTER ================= */}
             <div className="rounded-[5px] bg-[#f7f8fa] px-4 py-5">
 
               <h3 className="text-center text-[13px] font-semibold text-[#333]">
                 Подпишитесь на рассылку
               </h3>
 
-              <p className="mt-3 text-center text-[9px] leading-[15px] text-[#888]">
+              <p className="mt-3 text-center text-[9px] leading-3.75 text-[#888]">
                 Регулярные скидки и спецпредложения,
                 а также новости компании.
               </p>
@@ -234,38 +222,57 @@ export default async function AkciyaDetailPage({
               <input
                 type="email"
                 placeholder="Email"
-                className="mt-4 h-10 w-full rounded border border-[#e5e7eb] bg-white px-3 text-[10px] text-[#333] outline-none placeholder:text-[#aaa] focus:border-[#1976d2]"
+                className="
+                  mt-4
+                  h-10
+                  w-full
+                  rounded
+                  bg-white
+                  px-3
+                  text-[10px]
+                  text-[#333]
+                  outline-none
+                  placeholder:text-[#aaa]
+                  focus:ring-1
+                  focus:ring-[#1976d2]
+                "
               />
 
               {/* Subscribe */}
               <button
                 type="button"
-                className="mt-2 h-10 w-full rounded-[4px] bg-[#1976d2] text-[10px] font-semibold text-white transition hover:bg-[#1264b5]"
+                className="
+                  mt-2
+                  h-10
+                  w-full
+                  cursor-pointer
+                  rounded-lg
+                  bg-[#1976d2]
+                  text-[10px]
+                  font-semibold
+                  text-white
+                  transition
+                  hover:bg-[#1264b5]
+                "
               >
                 ПОДПИСАТЬСЯ
               </button>
 
               {/* Checkbox */}
               <label className="mt-4 flex cursor-pointer gap-2">
-
                 <input
                   type="checkbox"
                   className="mt-0.5 h-4 w-4 shrink-0"
                 />
 
-                <span className="text-[8px] leading-[12px] text-[#888]">
+                <span className="text-[8px] leading-3 text-[#888]">
                   Согласен с обработкой персональных данных
                   в соответствии с политикой конфиденциальности
                 </span>
-
               </label>
-
             </div>
-
           </aside>
-
         </div>
-
       </section>
     </main>
   );

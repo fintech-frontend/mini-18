@@ -32,7 +32,7 @@ export default function AKciiPage() {
                   href={`/akcii/${item.id}`}
                   className="block"
                 >
-                  <div className="relative h-[180px] overflow-hidden rounded-[6px] sm:h-[210px] lg:h-[220px]">
+                  <div className="relative h-45 overflow-hidden rounded-[6px] sm:h-52.5 lg:h-55">
                     <Image
                       src={item.image}
                       alt={item.title}
@@ -42,8 +42,8 @@ export default function AKciiPage() {
                     />
 
                     {/* IMAGE TEXT */}
-                    <div className="absolute bottom-4 left-4 max-w-[190px]">
-                      <p className="text-[14px] font-medium leading-[17px] text-[#222] sm:text-[15px] lg:text-[16px]">
+                    <div className="absolute bottom-4 left-4 max-w-47.5">
+                      <p className="text-[14px] font-medium leading-4.25 text-[#222] sm:text-[15px] lg:text-[16px]">
                         {item.title}
                       </p>
 
@@ -56,7 +56,7 @@ export default function AKciiPage() {
 
                 {/* DESCRIPTION */}
                 <div className="pt-3">
-                  <p className="min-h-[42px] text-[13px] font-medium leading-[18px] text-[#222] sm:text-[14px] sm:leading-[20px] lg:text-[15px]">
+                  <p className="min-h-10.5 text-[13px] font-medium leading-4.5 text-[#222] sm:text-[14px] sm:leading-5 lg:text-[15px]">
                     {item.description}
                   </p>
 

@@ -1,17 +1,10 @@
-import React from 'react'
-import OCompny from './Ocompany/page'
-import Kontakt from './kontakt/page'
-import Akcii from './akcii/page'
+
+import OformleniePage from './oformlenie/page'
 
 function Home() {
   return (
     <div>
-
-
-      
-      <Kontakt/>
-      <OCompny/>
-      <Akcii/>
+      <OformleniePage/>
     </div>
   )
 }

@@ -10,83 +10,83 @@ import { styles } from "@/styles/index.styles";
 
 export default function OCompny() {
     return (
-        <main className={styles.container}>
 
-            {/* UMUMIY CONTAINER */}
-            <div className="mx-auto w-full max-w-[1600px] px-5 sm:px-8 md:px-10 lg:px-16 xl:px-20">
+    <main className="w-full">
+      {/* ================= UMUMIY CONTAINER ================= */}
+      <div className={styles.container}>
 
-                {/* ================= HERO / О КОМПАНИИ ================= */}
-                <section className="py-10 sm:py-14 lg:py-20">
-                    <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[43%_57%]">
+        {/* ================= HERO / О КОМПАНИИ ================= */}
+        <section className="w-full p-0">
+          <div className="grid w-full grid-cols-1 items-center lg:grid-cols-[43%_57%]">
 
-                        {/* TEXT */}
-                        <div className="relative z-10">
-                            <h1 className="mb-6 text-4xl font-bold leading-tight text-[#2F3640] sm:text-5xl lg:text-[52px]">
-                                О компании
-                            </h1>
+            {/* ================= TEXT ================= */}
+            <div className="relative z-10 w-full p-0">
+              <h1 className="mb-6 text-4xl font-bold leading-tight text-[#2F3640] sm:text-5xl lg:text-[52px]">
+                О компании
+              </h1>
 
-                            <h3 className="mb-6 text-lg font-semibold leading-7 text-[#2F3640] sm:text-xl lg:text-[22px] lg:leading-8">
-                                «Стройоптторг» - крупнейшая оптово-розничная
-                                компания по продаже строительных и отделочных
-                                материалов.
-                            </h3>
+              <h3 className="mb-6 text-lg font-semibold leading-7 text-[#2F3640] sm:text-xl lg:text-[22px] lg:leading-8">
+                «Стройоптторг» - крупнейшая оптово-розничная
+                компания по продаже строительных и отделочных
+                материалов.
+              </h3>
 
-                            {/* Bitta P ichida */}
-                            <p className="text-sm leading-7 text-[#2C333D] sm:text-[15px] sm:leading-8">
-                                Уже второе десятилетие мы готовы воплотить в
-                                реальность Вашу мечту о красивом,
-                                комфортабельном доме, благоустроенном современном
-                                офисе, уютной теплой даче, помочь реализовать
-                                любые строительные и дизайнерские фантазии и с
-                                минимальными затратами времени и денежных средств.
+              <p className="text-sm leading-7 text-[#2C333D] z-50 sm:text-[15px] sm:leading-8">
+                Уже второе десятилетие мы готовы воплотить в
+                реальность Вашу мечту о красивом,
+                комфортабельном доме, благоустроенном современном
+                офисе, уютной теплой даче, помочь реализовать
+                любые строительные и дизайнерские фантазии и с
+                минимальными затратами времени и денежных средств.
 
-                                <br />
-                                <br />
+                <br />
+                <br />
 
-                                Вы всегда можете прийти к нам, пройтись по нашим
-                                складским и торговским площадям, оценить, как мы
-                                храним, принимаем и продаем товары. Пообщаться с
-                                продавцами-консультантами, получить консультацию
-                                по товарам у менеджеров.
+                Вы всегда можете прийти к нам, пройтись по нашим
+                складским и торговским площадям, оценить, как мы
+                храним, принимаем и продаем товары. Пообщаться с
+                продавцами-консультантами, получить консультацию
+                по товарам у менеджеров.
 
-                                <br />
-                                <br />
+                <br />
+                <br />
 
-                                Вы также можете всегда пожаловаться нам, спросить
-                                совета или вернуть не понравившийся товар. Если
-                                Вам что-то не понравилось — сообщите нам об этом.
-                                Только так мы сможем стать лучше.
+                Вы также можете всегда пожаловаться нам, спросить
+                совета или вернуть не понравившийся товар. Если
+                Вам что-то не понравилось — сообщите нам об этом.
+                Только так мы сможем стать лучше.
 
-                                <br />
-                                <br />
+                <br />
+                <br />
 
-                                Все товары, представленные на сайте,
-                                гарантированно есть в наличии.
+                Все товары, представленные на сайте,
+                гарантированно есть в наличии.
 
-                                <br />
-                                <br />
+                <br />
+                <br />
 
-                                Помимо материалов мы предлагаем большой набор
-                                услуг, которые значительно упрощают процесс
-                                строительства и ремонта и делают его легким и
-                                комфортным.
-                            </p>
-                        </div>
+                Помимо материалов мы предлагаем большой набор
+                услуг, которые значительно упрощают процесс
+                строительства и ремонта и делают его легким и
+                комфортным.
+              </p>
+            </div>
 
-                        {/* IMAGE */}
-                        <div className="relative h-[400px] w-full sm:h-[500px] lg:h-[620px]">
-                            <Image
-                                src={OCompnyImg}
-                                alt="О компании"
-                                fill
-                                priority
-                                sizes="(max-width: 1024px) 100vw, 57vw"
-                                className="object-cover object-center lg:rounded-l-xl"
-                            />
-                        </div>
+            {/* ================= IMAGE ================= */}
+            <div className="relative h-100 w-full sm:h-125 lg:h-162.5">
+              <Image
+                src={OCompnyImg}
+                alt="О компании"
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 57vw"
+                className="object-cover object-center"
+              />
+            </div>
 
-                    </div>
-                </section>
+          </div>
+        </section>
+
 
 
                 {/* ================= ПОЧЕМУ ИМЕННО МЫ ================= */}
@@ -438,7 +438,7 @@ export default function OCompny() {
                                         alt={item.title}
                                         width={400}
                                         height={220}
-                                        className="h-[220px] w-full rounded-xl object-cover transition duration-500 group-hover:scale-105"
+                                        className="h-55 w-full rounded-xl object-cover transition duration-500 group-hover:scale-105"
                                     />
 
                                 </div>
