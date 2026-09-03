@@ -507,7 +507,7 @@ export default function RegistrationPage() {
 
                 {/* DESCRIPTION */}
 
-                <p className="mt-6 max-w-[500px] text-sm leading-6 text-[#777d84]">
+                <p className="mt-6 max-w-125 text-sm leading-6 text-[#777d84]">
                   Перейдите в{" "}
                   <Link
                     href="/login"
