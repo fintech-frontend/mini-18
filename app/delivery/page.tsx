@@ -1,37 +1,47 @@
-import { deliveryData } from "@/data/delivery"; // O'zingiz saqlagan ma'lumotlar fayli
+import type { Metadata } from "next";
+import Link from "next/link";
+
+import { deliveryData } from "@/data/delivery";
 import { styles } from "@/styles/index.styles";
-import DeliverySidebar from "./DeliverySidebar";
-import DeliveryGallery from "./DeliveryGallery";
 import DeliveryDataMap from "./DeliveryDataMap";
+import DeliveryGallery from "./DeliveryGallery";
+import DeliverySidebar from "./DeliverySidebar";
+
+export const metadata: Metadata = {
+  title: "Доставка — Стройоптторг",
+  description:
+    "Способы и условия доставки заказов интернет-магазина «Стройоптторг».",
+};
 
 export default function DeliveryPage() {
   return (
-    <section
-      className={`${styles.container} py-6 md:py-8`}
-    >
-      {/* Navigatsiya (Breadcrumb) */}
-      <nav className="mb-4 md:mb-6 text-xs md:text-sm text-gray-400">
-        <a href="/" className="hover:text-blue-600 transition-colors">
+    <section className={`${styles.container} pb-20 lg:pb-[110px]`}>
+      {/* Breadcrumb */}
+      <nav
+        aria-label="Хлебные крошки"
+        className="pt-3 text-[14px] text-[#8A9098] lg:pt-[18px]"
+      >
+        <Link href="/" className="text-[#2C333D] hover:text-[#186FD4]">
           Стройоптторг
-        </a>{" "}
-        / <span className="text-gray-800">Доставка</span>
+        </Link>
+        <span className="mx-2.5">/</span>
+        <span aria-current="page">Доставка</span>
       </nav>
 
-      {/* Sarlavha */}
-      <h1 className="mb-6 md:mb-8 text-[28px] sm:text-[32px] md:text-[40px] lg:text-[48px] font-bold text-[#2C333D] leading-tight">
+      <h1 className="mt-5 text-[28px] leading-[1.15] font-bold tracking-[-0.5px] text-[#2C333D] md:text-[30px] lg:mt-[19px] lg:text-[40px] 2xl:text-[44px]">
         {deliveryData.header.title}
       </h1>
 
-      {/* Asosiy Layout: Ma'lumotlar + Sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_330px] gap-8 items-start">
-        {/* Chap taraf: Matnli ma'lumotlar */}
-
-        <DeliveryDataMap/>
-
-        <DeliverySidebar/>
+      {/* Matn + sidebar: 1024+ yonma-yon, 360 / 768 da sidebar matndan keyin */}
+      <div className="mt-5 grid grid-cols-1 items-start gap-y-[50px] lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-x-5 xl:grid-cols-[minmax(0,1fr)_331px]">
+        <DeliveryDataMap />
+        <DeliverySidebar />
       </div>
 
-      <DeliveryGallery/>
+      {/* Maketda galereya faqat desktop'da bor */}
+      <div className="mt-[60px] hidden lg:block">
+        <DeliveryGallery />
+      </div>
     </section>
   );
 }

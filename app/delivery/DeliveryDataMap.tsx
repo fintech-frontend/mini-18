@@ -1,111 +1,93 @@
 import { deliveryData } from "@/data/delivery";
 
-function DeliveryDataMap() {
+function BulletList({ items }: { items: string[] }) {
   return (
-    <div className="w-full text-[13px] md:text-[14px] text-[#393939] leading-relaxed">
-      {/* Header qismi */}
-      <div className="flex flex-col gap-4 mb-6">
-        {deliveryData.header.paragraphs.map((p, idx) => (
-          <p key={idx}>{p}</p>
-        ))}
-        <p className="font-semibold text-[#2C333D] mt-2">
-          {deliveryData.header.subheading}
-        </p>
-      </div>
+    <ul className="flex flex-col gap-[9px] pl-[15px]">
+      {items.map((item) => (
+        <li key={item} className="flex items-start gap-2.5">
+          <span
+            aria-hidden
+            className="mt-[11px] size-1.5 shrink-0 rounded-full bg-[#D93829]"
+          />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
-      {/* Methods (1 va 2 bo'limlar) */}
-      {deliveryData.methods.map((method) => (
-        <div key={method.id} className="mb-8">
-          <h3 className="font-bold text-[#2C333D] text-[15px] md:text-[16px] mb-3">
-            {method.title}
-          </h3>
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="text-[18px] leading-[26px] font-bold text-[#2C333D]">
+      {children}
+    </h2>
+  );
+}
 
-          {method.description && <p className="mb-4">{method.description}</p>}
+/** "Доставка" sahifasining asosiy matni (maket: 16px / 27px, bloklar orasi 20px) */
+function DeliveryDataMap() {
+  const { header, methods, rules, additionalMethods } = deliveryData;
 
-          {/* Ish vaqti */}
-          {method.workInfo && (
-            <div className="mb-4">
-              <p className="font-semibold mb-2">{method.workInfo.title}</p>
-              <ul className="flex flex-col gap-2">
-                {method.workInfo.schedule.map((item, idx) => (
-                  <li key={idx} className="flex gap-2.5 items-start">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0"></span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {method.note && <p className="mb-4">{method.note}</p>}
-
-          {/* Qo'shimcha paragraflar */}
-          {method.paragraphs && (
-            <div className="flex flex-col gap-4">
-              {method.paragraphs.map((p, idx) => (
-                <p key={idx}>{p}</p>
-              ))}
-            </div>
-          )}
-        </div>
+  return (
+    <div className="flex w-full min-w-0 flex-col gap-5 text-[16px] leading-[27px] text-[#393939]">
+      {header.paragraphs.map((p) => (
+        <p key={p}>{p}</p>
       ))}
 
-      {/* Rules (Qoidalar) */}
-      <div className="mb-8">
-        <h3 className="font-bold text-[#2C333D] text-[15px] md:text-[16px] mb-3">
-          {deliveryData.rules.title}
-        </h3>
-        <p className="mb-4">{deliveryData.rules.description}</p>
+      <p className="text-[18px] leading-[26px] font-semibold text-[#2C333D]">
+        {header.subheading}
+      </p>
 
-        <ul className="flex flex-col gap-3 mb-6">
-          {deliveryData.rules.list.map((item, idx) => (
-            <li key={idx} className="flex gap-2.5 items-start">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0"></span>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
+      {methods.map((method) => (
+        <section key={method.id} className="flex flex-col gap-5">
+          <SectionTitle>{method.title}</SectionTitle>
 
-        {/* Ogohlantirish bloki (Highlight) */}
-        <div className="bg-[#F4F7FA] p-4 md:p-5 rounded-lg mb-6 border-l-4 border-blue-500 text-[#2C333D] font-medium">
-          {deliveryData.rules.highlightWarning}
-        </div>
+          {method.description && <p>{method.description}</p>}
 
-        <p>{deliveryData.rules.supportContact}</p>
-      </div>
-
-      {/* Additional Methods (3 va 4 bo'limlar) */}
-      {deliveryData.additionalMethods.map((method) => (
-        <div key={method.id} className="mb-8">
-          <h3 className="font-bold text-[#2C333D] text-[15px] md:text-[16px] mb-3">
-            {method.title}
-          </h3>
-
-          {method.subtitle && (
-            <p className="font-semibold text-[#2C333D] mb-3">
-              {method.subtitle}
-            </p>
-          )}
-
-          {method.list && (
-            <ul className="flex flex-col gap-3 mb-4">
-              {method.list.map((item, idx) => (
-                <li key={idx} className="flex gap-2.5 items-start">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0"></span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {method.paragraphs && (
-            <div className="flex flex-col gap-4 mb-4">
-              {method.paragraphs.map((p, idx) => (
-                <p key={idx}>{p}</p>
-              ))}
+          {method.workInfo && (
+            <div className="flex flex-col gap-2.5">
+              <p className="font-semibold text-[#2C333D]">
+                {method.workInfo.title}
+              </p>
+              <BulletList items={method.workInfo.schedule} />
             </div>
           )}
-        </div>
+
+          {method.note && <p>{method.note}</p>}
+
+          {method.paragraphs?.map((p) => (
+            <p key={p}>{p}</p>
+          ))}
+        </section>
+      ))}
+
+      <section className="flex flex-col gap-5">
+        <p className="font-semibold text-[#2C333D]">{rules.title}</p>
+        <p>{rules.description}</p>
+
+        <BulletList items={rules.list} />
+
+        <p className="rounded-lg bg-[#F4F7FA] px-5 py-[15px] font-medium text-[#2C333D]">
+          {rules.highlightWarning}
+        </p>
+
+        <p>{rules.supportContact}</p>
+      </section>
+
+      {additionalMethods.map((method) => (
+        <section key={method.id} className="flex flex-col gap-5">
+          <SectionTitle>{method.title}</SectionTitle>
+
+          {method.subtitle && (
+            <p className="font-semibold text-[#2C333D]">{method.subtitle}</p>
+          )}
+
+          {method.list && <BulletList items={method.list} />}
+
+          {method.paragraphs?.map((p) => (
+            <p key={p}>{p}</p>
+          ))}
+        </section>
       ))}
     </div>
   );

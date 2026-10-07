@@ -1,16 +1,17 @@
-import { newsData } from "@/data/news";
+import Image from "next/image";
+import Link from "next/link";
+
+import type { NewsItem } from "@/data/news";
 import { styles } from "@/styles/index.styles";
 
-export default function NewsPage() {
+export default function NewsPage({ items }: { items: NewsItem[] }) {
   return (
-    <section
-      className={`${styles.container} py-6 md:py-8`}
-    >
+    <section className={`${styles.container} py-6 md:py-8`}>
       {/* Navigatsiya (Breadcrumb) */}
       <nav className="mb-3 md:mb-4 text-xs md:text-sm text-gray-400">
-        <a href="/" className="hover:text-blue-600 transition-colors">
+        <Link href="/" className="hover:text-blue-600 transition-colors">
           Стройоптторг
-        </a>{" "}
+        </Link>{" "}
         / <span className="text-gray-800">Новости</span>
       </nav>
 
@@ -56,16 +57,18 @@ export default function NewsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_330px] gap-8 items-start">
         {/* Chap taraf: Yangiliklar Grid */}
         <div className="w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-[30px]">
-          {newsData.map((item) => (
+          {items.map((item) => (
             <div
               key={item.id}
               className="flex flex-col w-full h-full gap-3 sm:gap-4 group cursor-pointer"
             >
-              <div className="w-full overflow-hidden rounded-lg">
-                <img
+              <div className="relative w-full h-[200px] md:h-[209px] overflow-hidden rounded-lg">
+                <Image
                   src={item.image}
                   alt={item.title}
-                  className="w-full h-[200px] md:h-[209px] object-cover group-hover:scale-105 transition-transform duration-300"
+                  fill
+                  sizes="(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 403px"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
               <h3 className="text-[#2C333D] font-semibold text-[18px] md:text-[20px] leading-snug group-hover:text-blue-600 transition-colors">
@@ -134,7 +137,6 @@ export default function NewsPage() {
               <label className="mt-3 flex items-start gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  defaultChecked
                   className="mt-1 min-w-[14px] min-h-[14px] cursor-pointer"
                 />
                 <span className="text-[#696D70] text-[11px] md:text-[12px] leading-snug">

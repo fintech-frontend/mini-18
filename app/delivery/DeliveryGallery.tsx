@@ -1,78 +1,113 @@
 "use client";
 
-import { useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
+const GALLERY_IMAGES = [
+  "/images/delivery/delivery-1.png",
+  "/images/delivery/delivery-2.png",
+  "/images/delivery/delivery-3.png",
+  "/images/delivery/delivery-4.png",
+];
+
+function Arrow({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        d={direction === "left" ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"}
+      />
+    </svg>
+  );
+}
+
+/** Ombor rasmlari karuseli (maket: 4 ta 390×233, oraliq 20px) */
 export default function DeliveryGallery() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
 
-  // Tugmalar bosilganda yon tomonga surish funksiyasi
+  const updateArrows = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanPrev(el.scrollLeft > 1);
+    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    updateArrows();
+    el.addEventListener("scroll", updateArrows, { passive: true });
+    window.addEventListener("resize", updateArrows);
+    return () => {
+      el.removeEventListener("scroll", updateArrows);
+      window.removeEventListener("resize", updateArrows);
+    };
+  }, [updateArrows]);
+
   const scroll = (direction: "left" | "right") => {
-    if (scrollRef.current) {
-      const { scrollLeft, clientWidth } = scrollRef.current;
-      const scrollAmount = clientWidth * 0.75; // Bosilganda qancha masofaga surilishi
-      scrollRef.current.scrollTo({
-        left: direction === "left" ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
-        behavior: "smooth",
-      });
-    }
+    const el = scrollRef.current;
+    if (!el) return;
+    const step = el.clientWidth / 2;
+    el.scrollBy({
+      left: direction === "left" ? -step : step,
+      behavior: "smooth",
+    });
   };
 
-  // Rasmlar ro'yxati (o'zingizning rasmlar manzili bilan almashtirasiz)
-  const galleryImages = [
-    "/images/delivery/delivery-1.png",
-    "/images/delivery/delivery-2.png",
-    "/images/delivery/delivery-3.png",
-    "/images/delivery/delivery-4.png",
-  ];
+  const arrowClass =
+    "absolute top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#EDF0F2] bg-white text-[#2C333D] shadow-md transition-opacity hover:bg-[#F8F9FA] disabled:cursor-default disabled:opacity-40";
 
   return (
-    <div className="relative w-full py-6 md:py-8">
-      
-      {/* Chapga surish tugmasi */}
+    <div className="relative">
       <button
+        type="button"
         onClick={() => scroll("left")}
-        className="absolute left-0 sm:left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white shadow-lg rounded-full flex items-center justify-center text-gray-700 transition-all border border-gray-100 cursor-pointer"
-        aria-label="Previous"
+        disabled={!canPrev}
+        aria-label="Предыдущие фото"
+        className={`${arrowClass} -left-5`}
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-        </svg>
+        <Arrow direction="left" />
       </button>
 
-      {/* Rasmlar konteyneri (Gorizontal Scroll) */}
       <div
         ref={scrollRef}
-        className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth px-2 md:px-4 py-2"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }} // Scrollbar chizig'ini yashirish uchun
+        className="flex snap-x snap-mandatory gap-5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {galleryImages.map((src, index) => (
+        {GALLERY_IMAGES.map((src, index) => (
           <div
-            key={index}
-            className="relative min-w-[280px] sm:min-w-[340px] md:min-w-[380px] lg:min-w-[420px] h-[180px] sm:h-[200px] md:h-[230px] rounded-lg overflow-hidden flex-shrink-0 shadow-sm bg-gray-100"
+            key={src}
+            className="relative aspect-[390/233] w-[calc((100%-60px)/4)] shrink-0 snap-start overflow-hidden rounded-lg bg-[#F4F5F7]"
           >
             <Image
               src={src}
-              alt={`Delivery warehouse ${index + 1}`}
+              alt={`Склад «Стройоптторг», фото ${index + 1}`}
               fill
-              sizes="(max-width: 640px) 280px, (max-width: 1024px) 340px, 420px"
-              className="object-cover hover:scale-105 transition-transform duration-300"
+              sizes="(max-width: 1919px) 25vw, 390px"
+              className="object-cover transition-transform duration-300 hover:scale-105"
             />
           </div>
         ))}
       </div>
 
-      {/* O'ngga surish tugmasi */}
       <button
+        type="button"
         onClick={() => scroll("right")}
-        className="absolute right-0 sm:right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white shadow-lg rounded-full flex items-center justify-center text-gray-700 transition-all border border-gray-100 cursor-pointer"
-        aria-label="Next"
+        disabled={!canNext}
+        aria-label="Следующие фото"
+        className={`${arrowClass} -right-5`}
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-        </svg>
+        <Arrow direction="right" />
       </button>
-
     </div>
   );
 }
