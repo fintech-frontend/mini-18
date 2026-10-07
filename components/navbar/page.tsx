@@ -15,7 +15,6 @@ import {
   X 
 } from 'lucide-react';
 import { styles } from '@/styles/index.styles';
-import CartDiscountBanner from '../CartDiscountBanner';
 
 const navItems = [
   { label: 'О компании', uppercaseLabel: 'О КОМПАНИИ', href: '/Ocompany' },
@@ -318,10 +317,7 @@ export default function Header() {
       </div>
 
       {/* Cart Discount Modal */}
-      <CartDiscountBanner 
-        isOpen={isCartOpen} 
-        onClose={() => setIsCartOpen(false)} 
-      />
+    
 
       {/* Mobile/Tablet Sidebar Menu */}
       {isMobileMenuOpen && (
