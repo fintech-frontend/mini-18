@@ -1,50 +1,53 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import Container from "@/components/ui/Container";
+import { Tag } from "lucide-react";
+import { styles } from "@/styles/index.styles";
+import { useGetBrandsQuery } from "@/lib/api/apiSlice";
 
-const brands = [
-  { name: "КЕРАМИН", logo: "/assets/icons/brand-keramin.svg" },
-  { name: "Electrolux", logo: "/assets/icons/brand-electrolux.svg" },
-  { name: "BOSCH", logo: "/assets/icons/brand-bosch.svg" },
-  { name: "oasis", logo: "/assets/icons/brand-oasis.svg" },
-  { name: "KINPLAST", logo: "/assets/icons/brand-kinplast.svg" },
-  { name: "Ceresit", logo: "/assets/icons/brand-ceresit.svg" },
-  { name: "BAUPROFFE", logo: "/assets/icons/brand-bauproffe.svg" },
+const fallbackBrands: { name: string; slug: string; logo?: string }[] = [
+  { name: "КЕРАМИН", slug: "keramin" },
+  { name: "Electrolux", slug: "electrolux" },
+  { name: "BOSCH", slug: "bosch" },
+  { name: "oasis", slug: "oasis" },
+  { name: "KINPLAST", slug: "kinplast" },
+  { name: "Ceresit", slug: "ceresit" },
+  { name: "BAUPROFFE", slug: "bauproffe" },
 ];
 
 export const BrandsCarousel = () => {
+  const { data, isLoading, isError } = useGetBrandsQuery();
+
+  const brands =
+    !isLoading && !isError && data && data.results.length > 0
+      ? data.results.map((b) => ({ name: b.name, slug: b.slug, logo: b.logo }))
+      : fallbackBrands;
+
   return (
     <section className="border-y border-gray-100 py-6 sm:py-8">
-      <Container>
+      <div className={styles.container}>
         <h2 className="mb-4 text-xl font-semibold text-gray-900 sm:mb-6 sm:text-2xl">
           Популярные бренды
         </h2>
-        <div className="relative flex items-center gap-2">
-          <button
-            aria-label="Назад"
-            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 sm:flex"
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <div className="flex flex-1 gap-3 overflow-x-auto pb-1">
-            {brands.map((brand) => (
-              <div
-                key={brand.name}
-                className="flex h-16 w-37 shrink-0 items-center justify-center rounded-xl border border-gray-100 bg-white px-4"
-              >
+        <div className="flex gap-3 overflow-x-auto pb-1">
+          {brands.map((brand) => (
+            <div
+              key={brand.slug}
+              className="flex h-16 w-37 shrink-0 items-center justify-center gap-2 rounded-xl border border-gray-100 bg-white px-4"
+            >
+              {brand.logo ? (
                 <img src={brand.logo} alt={brand.name} className="max-h-8 max-w-full object-contain" />
-              </div>
-            ))}
-          </div>
-          <button
-            aria-label="Вперёд"
-            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 sm:flex"
-          >
-            <ChevronRight size={18} />
-          </button>
+              ) : (
+                <>
+                  <Tag size={16} className="shrink-0 text-gray-400" />
+                  <span className="truncate text-sm font-medium text-gray-700">
+                    {brand.name}
+                  </span>
+                </>
+              )}
+            </div>
+          ))}
         </div>
-      </Container>
+      </div>
     </section>
   );
 };

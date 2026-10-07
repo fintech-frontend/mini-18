@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import Container from "@/components/ui/Container";
+import { styles } from "@/styles/index.styles";
 import ProductCard from "@/components/ui/ProductCard";
 import { Product } from "@/types/product";
 import { EmptyState } from "../ui/EmptyState";
@@ -35,7 +35,7 @@ export const HitsSection = ({ products }: { products: Product[] }) => {
 
   return (
     <section className="py-6 sm:py-8">
-      <Container>
+      <div className={styles.container}>
         <h2 className="mb-4 text-xl font-semibold text-gray-900 sm:text-2xl">
           Хиты продаж
         </h2>
@@ -94,7 +94,7 @@ export const HitsSection = ({ products }: { products: Product[] }) => {
           </button>
         </div>
 )}
-      </Container>
+      </div>
     </section>
   );
 };

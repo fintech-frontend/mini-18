@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+import { Providers } from "./providers";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import { CompareProvider } from "@/context/CompareContext";
 
 import Header from "@/components/navbar/page";
 import FooterWithMenu from "@/components/footer/page";
-import { styles } from "@/styles/index.styles";
 import { CartProvider } from "@/context/CartContext";
 const helvetica = localFont({
   src: [
@@ -44,16 +44,20 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${helvetica.variable}`}
     >
-      <body className={`${styles.container}min-h-screen flex flex-col antialiased`}>
-       <FavoritesProvider>
-  <CompareProvider>
-    <CartProvider>
-      <Header />
-      <main className="flex-1">{children}</main>
-      <FooterWithMenu />
-    </CartProvider>
-  </CompareProvider>
-</FavoritesProvider>
+      <body className="min-h-screen flex flex-col antialiased">
+        <Providers>
+          <FavoritesProvider>
+            <CompareProvider>
+              <CartProvider>
+
+                <Header />
+                <main className="flex-1">{children}</main>
+                <FooterWithMenu />
+
+              </CartProvider>
+            </CompareProvider>
+          </FavoritesProvider>
+        </Providers>
       </body>
     </html>
   );

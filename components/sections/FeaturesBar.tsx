@@ -1,5 +1,5 @@
 import { CreditCard, LayoutGrid, Package, Percent } from "lucide-react";
-import Container from "@/components/ui/Container";
+import { styles } from "@/styles/index.styles";
 
 const features = [
   { icon: CreditCard, text: "Оплата любым удобным способом" },
@@ -11,7 +11,7 @@ const features = [
 export const FeaturesBar = () => {
   return (
     <section className="border-y border-gray-100 py-4">
-      <Container>
+      <div className={styles.container}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
           {features.map(({ icon: Icon, text }, i) => (
             <div key={i} className="flex items-center gap-3">
@@ -22,7 +22,7 @@ export const FeaturesBar = () => {
             </div>
           ))}
         </div>
-      </Container>
+      </div>
     </section>
   );
 };

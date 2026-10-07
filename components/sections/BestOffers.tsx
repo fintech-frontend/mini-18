@@ -1,7 +1,7 @@
 "use client";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useMemo, useState } from "react";
-import Container from "@/components/ui/Container";
+import { styles } from "@/styles/index.styles";
 import ProductCard from "@/components/ui/ProductCard";
 import { Product } from "@/types/product";
 
@@ -23,7 +23,7 @@ export const BestOffers = ({ products }: { products: Product[] }) => {
 
   return (
     <section className="py-6 sm:py-8">
-      <Container>
+      <div className={styles.container}>
         <h2 className="mb-4 text-xl font-semibold text-gray-900 sm:text-2xl">
           Лучшее предложения
         </h2>
@@ -52,7 +52,7 @@ export const BestOffers = ({ products }: { products: Product[] }) => {
             ))}
           </div>
         )}
-      </Container>
+      </div>
     </section>
   );
 };

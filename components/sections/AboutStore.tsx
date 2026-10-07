@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Container from "@/components/ui/Container";
 import { styles } from "@/styles/index.styles";
 
 const stats = [
@@ -11,10 +10,9 @@ const stats = [
 
 export const AboutStore = () => {
   return (
-    <section className={`${styles.container} py-6 sm:py-8`}>
-     
-        <div className="grid grid-cols-1 overflow-hidden rounded-2xl bg-[#F9FAFB] lg:grid-cols-2">
-          <div className="flex flex-col justify-center p-6 sm:p-8 lg:p-10">
+    <section className="relative my-6 overflow-hidden bg-[#F9FAFB] sm:my-8">
+      <div className={styles.container}>
+          <div className="flex flex-col justify-center py-10 lg:w-1/2 lg:py-14 lg:pr-12">
             <h2 className="mb-3 text-xl font-semibold text-[#2C333D] sm:text-2xl">
               О нашем магазине
             </h2>
@@ -24,7 +22,7 @@ export const AboutStore = () => {
               будет решать задачи и трудности, с которыми сталкиваются люди во
               время ремонта.
             </p>
-            <div className="mb-6 grid grid-cols-4 gap-2 sm:gap-6">
+            <div className="mb-6 grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-4 sm:gap-6">
               {stats.map((s) => (
                 <div key={s.label}>
                   <p className="mb-1 text-lg font-bold text-[#117FE3] sm:text-xl">{s.value}</p>
@@ -46,18 +44,16 @@ export const AboutStore = () => {
               Подробнее о компании →
             </Link>
           </div>
+      </div>
 
-          {/* Image: Figma'da qattiq to'rtburchakka kesilmagan, erkin "suzib" turadi */}
-          <div className="relative flex min-h-[220px] items-center justify-center overflow-hidden sm:min-h-[280px] lg:min-h-full">
-            <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(0,0,0,0.04)_0%,rgba(0,0,0,0)_65%)]" />
-            <img
-              src="/assets/images/about-tools.svg"
-              alt="Инструменты"
-              className="relative w-[115%] max-w-none scale-105 object-contain"
-            />
-          </div>
-        </div>
-    
+      {/* Rasm: mobil'da matn ostida, katta ekranda o'ng yarmini ekran chetigacha to'ldiradi */}
+      <div className="relative h-[260px] w-full sm:h-[360px] lg:absolute lg:inset-y-0 lg:right-0 lg:h-auto lg:w-1/2">
+        <img
+          src="/assets/images/about-tools.svg"
+          alt="Инструменты"
+          className="h-full w-full object-cover"
+        />
+      </div>
     </section>
   );
 };

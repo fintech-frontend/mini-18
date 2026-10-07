@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Trash2, Heart, ShoppingCart, ChevronRight, ChevronDown } from "lucide-react";
-import Container from "@/components/ui/Container";
+import { styles } from "@/styles/index.styles";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useCompare } from "@/context/CompareContext";
 import { useFavorites } from "@/context/FavoritesContext";
@@ -74,7 +74,7 @@ const specRows: Row[] = useMemo(() => {
 
   if (compareItems.length === 0) {
     return (
-      <Container className="py-8 sm:py-12">
+      <div className={`${styles.container} py-8 sm:py-12`}>
         <h1 className="mb-6 text-xl font-bold text-gray-900 sm:text-2xl">
           Сравнение
         </h1>
@@ -82,13 +82,13 @@ const specRows: Row[] = useMemo(() => {
           title="Список сравнения пуст"
           description="Добавьте товары для сравнения с помощью значка на карточке товара"
         />
-      </Container>
+      </div>
     );
   }
 
   return (
     <div className="bg-white">
-      <Container className="py-6 sm:py-8">
+      <div className={`${styles.container} py-6 sm:py-8`}>
         {/* Breadcrumb */}
         <div className="mb-4 flex items-center gap-1 text-xs text-gray-400">
           <Link href="/" className="hover:text-gray-600">
@@ -231,7 +231,7 @@ const specRows: Row[] = useMemo(() => {
             </div>
           </div>
         </div>
-      </Container>
+      </div>
     </div>
   );
 }

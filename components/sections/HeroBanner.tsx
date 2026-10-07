@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import Container from "@/components/ui/Container";
+import { styles } from "@/styles/index.styles";
 
 const SLIDES_COUNT = 4;
 
@@ -14,7 +14,7 @@ export const HeroBanner = () => {
 
   return (
     <section className="py-4 sm:py-6">
-      <Container>
+      <div className={styles.container}>
         <div className="relative overflow-hidden rounded-2xl bg-gray-800">
           {/* Background image — o'zingizniki bilan almashtiring */}
           <div className="absolute inset-0">
@@ -70,7 +70,7 @@ export const HeroBanner = () => {
             ))}
           </div>
         </div>
-      </Container>
+      </div>
     </section>
   );
 };

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Plus, Minus } from "lucide-react";
-import Container from "@/components/ui/Container";
+import { styles } from "@/styles/index.styles";
 
 const faqItems = [
     {
@@ -37,7 +37,7 @@ export default function ReturnsPage() {
 
     return (
         <div className="bg-white">
-            <Container className="py-6 sm:py-8">
+            <div className={`${styles.container} py-6 sm:py-8`}>
                 {/* Breadcrumb */}
                 <div className="mb-6 flex items-center gap-1 text-xs text-gray-400">
                     <Link href="/" className="hover:text-gray-600">
@@ -181,7 +181,7 @@ export default function ReturnsPage() {
                         </div>
                     </div>  
                 </div>
-            </Container>
+            </div>
         </div>
     );
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Container from "@/components/ui/Container";
+import { styles } from "@/styles/index.styles";
 
 const news = [
   { id: 1, title: "Масштабное обновление каталога инструментов", excerpt: "С радостью сообщаем вам о крупном пополнении нашего каталога инструментов.", date: "6 Августа 2025", image: "/assets/images/news-1.svg" },
@@ -11,7 +11,7 @@ const news = [
 export const LatestNews = () => {
   return (
     <section className="py-6 sm:py-8">
-      <Container>
+      <div className={styles.container}>
         <div className="mb-4 flex items-center justify-between sm:mb-6">
           <h2 className="text-xl font-semibold text-gray-900 sm:text-2xl">Последние новости</h2>
           <Link href="/news" className="text-sm font-medium text-blue-600 hover:underline">
@@ -32,7 +32,7 @@ export const LatestNews = () => {
             </Link>
           ))}
         </div>
-      </Container>
+      </div>
     </section>
   );
 };

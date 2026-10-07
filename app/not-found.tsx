@@ -1,9 +1,9 @@
 import Link from "next/link";
-import Container from "@/components/ui/Container";
+import { styles } from "@/styles/index.styles";
 
 export default function NotFound() {
   return (
-    <Container className="flex min-h-[60vh] flex-col items-center justify-center py-16 text-center">
+    <div className={`${styles.container} flex min-h-[60vh] flex-col items-center justify-center py-16 text-center`}>
       <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-blue-600">
         Ошибка 404
       </p>
@@ -28,6 +28,6 @@ export default function NotFound() {
           Перейти в каталог
         </Link>
       </div>
-    </Container>
+    </div>
   );
 }

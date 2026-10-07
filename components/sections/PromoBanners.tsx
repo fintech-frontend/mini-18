@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Container from "@/components/ui/Container";
+import { styles } from "@/styles/index.styles";
 
 const banners = [
   { title: "Метизные изделия", discount: "до -15%", image: "/assets/images/promo-metiz.svg", href: "/catalog/metiz" },
@@ -11,7 +11,7 @@ const banners = [
 export const PromoBanners = () => {
   return (
     <section className="pb-6 sm:pb-8">
-      <Container>
+      <div className={styles.container}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {banners.map((b) => (
             <Link
@@ -36,7 +36,7 @@ export const PromoBanners = () => {
             </Link>
           ))}
         </div>
-      </Container>
+      </div>
     </section>
   );
 };

@@ -191,11 +191,11 @@ export default function FooterWithMenu() {
               <div className="flex flex-col text-left md:text-right">
                 <a
                   href="tel:88004440065"
-                  className="text-lg lg:text-xl font-extrabold text-gray-900 leading-none hover:text-[#2563eb] transition-colors"
+                  className="whitespace-nowrap text-lg lg:text-xl font-extrabold text-gray-900 leading-none hover:text-[#2563eb] transition-colors"
                 >
                   8 800 444 00 65
                 </a>
-                <span className="text-[11px] lg:text-xs text-gray-500 mt-1">
+                <span className="whitespace-nowrap text-[11px] lg:text-xs text-gray-500 mt-1">
                   Ежедневно, с 8:00 до 18:00
                 </span>
               </div>

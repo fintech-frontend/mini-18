@@ -1,4 +1,4 @@
-import Container from "@/components/ui/Container";
+import { styles } from "@/styles/index.styles";
 import ProductCard from "@/components/ui/ProductCard";
 import { Product } from "@/types/product";
 
@@ -11,7 +11,7 @@ export default function ProductList({
 }) {
   return (
     <section className="py-6 sm:py-8">
-      <Container>
+      <div className={styles.container}>
         {title && (
           <h2 className="mb-4 text-xl font-semibold text-gray-900 sm:mb-6 sm:text-2xl">
             {title}
@@ -22,7 +22,7 @@ export default function ProductList({
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
-      </Container>
+      </div>
     </section>
   );
 }
