@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { 
   Menu, 
@@ -29,13 +29,30 @@ const navItems = [
 const catalogCategories = [
   { title: 'Строительные материалы', href: '/catalog/building-materials' },
   { title: 'Отделочные материалы', href: '/catalog/finishing-materials' },
-  { title: 'Электроинструмент', href: '/catalog/power-tools' },
+  { title: 'Электроинструмент', href: '/catalog' },
   { title: 'Ручной инструмент', href: '/catalog/hand-tools' },
   { title: 'Сантехника', href: '/catalog/plumbing' },
   { title: 'Сантехника и крепеж', href: '/catalog/fasteners' },
   { title: 'Электротовары', href: '/catalog/electrical' },
   { title: 'Cад и огород', href: '/catalog/garden' },
 ];
+
+// 360px da qidiruv placeholder'i qisqa bo'ladi (maketdagidek "Поиск...")
+const MOBILE_QUERY = '(max-width: 767px)';
+
+function subscribeToMobile(callback: () => void) {
+  const media = window.matchMedia(MOBILE_QUERY);
+  media.addEventListener('change', callback);
+  return () => media.removeEventListener('change', callback);
+}
+
+function useIsMobile() {
+  return useSyncExternalStore(
+    subscribeToMobile,
+    () => window.matchMedia(MOBILE_QUERY).matches,
+    () => false,
+  );
+}
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -44,8 +61,10 @@ export default function Header() {
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Dinamik sanoqlar
-  const [cartCount, setCartCount] = useState(0); 
-  const [favoritesCount, setFavoritesCount] = useState(0);
+  // TODO: global savat / izbrannoe store ulanganda shu yerga bog'lanadi
+  const [cartCount] = useState(0);
+  const [favoritesCount] = useState(0);
+  const isMobile = useIsMobile();
 
   return (
     <header className="w-full bg-white border-b border-gray-100 font-sans sticky top-0 z-40 select-none">
@@ -62,12 +81,12 @@ export default function Header() {
             aria-label="Открыть меню"
           >
             <Menu className="w-5 h-5 stroke-[2]" />
-            <span className="font-semibold text-xs text-gray-800">Меню</span>
+            <span className="hidden md:inline font-semibold text-xs text-gray-800">Меню</span>
           </button>
 
           {/* Desktop Navigation Links */}
           <nav className="hidden lg:block">
-            <ul className="flex items-center gap-6 xl:gap-8 font-normal">
+            <ul className="flex items-center gap-4 xl:gap-8 whitespace-nowrap font-normal">
               {navItems.map((item, index) => (
                 <li key={index}>
                   <Link
@@ -83,7 +102,7 @@ export default function Header() {
 
           {/* Contacts & Callback Button */}
           <div className="flex items-center gap-3 md:gap-5 xl:gap-6 ml-auto lg:ml-0">
-            <span className="text-gray-400 font-normal hidden md:inline text-[11px] lg:text-xs">
+            <span className="text-gray-400 font-normal hidden md:inline lg:hidden xl:inline text-[11px] lg:text-xs whitespace-nowrap">
               Ежедневно, с 8:00 до 18:00
             </span>
 
@@ -107,12 +126,12 @@ export default function Header() {
       </div>
 
       {/* ================= 2. MAIN HEADER ================= */}
-      <div className={`${styles?.container} py-3 flex flex-col lg:flex-row justify-between gap-3 lg:gap-8 lg:items-center relative`}>
+      <div className={`${styles?.container} py-3 flex flex-col lg:flex-row justify-between gap-3 lg:gap-6 xl:gap-8 lg:items-center relative`}>
         
         {/* Logo & Tablet/Mobile Icons */}
         <div className="flex items-center justify-between w-full lg:w-auto">
-          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <div className="w-9 h-9 md:w-10 md:h-10 shrink-0">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 shrink-0">
               <svg viewBox="0 0 100 100" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="50" cy="50" r="44" stroke="#D93829" strokeWidth="8" />
                 <path d="M30 68V48L50 32L70 48V68H30Z" fill="#1B365D" />
@@ -120,11 +139,11 @@ export default function Header() {
               </svg>
             </div>
 
-            <div className="sm:flex hidden flex-col">
-              <span className="text-[#D93829] font-black text-lg md:text-xl tracking-tight uppercase leading-none">
+            <div className="flex flex-col">
+              <span className="text-[#D93829] font-black text-[15px] sm:text-lg md:text-xl tracking-tight uppercase leading-none">
                 СТРОЙОПТТОРГ
               </span>
-              <span className="text-[8.5px] md:text-[9px] text-[#1B365D] font-bold uppercase tracking-wider mt-1 leading-none">
+              <span className="text-[6.5px] sm:text-[8.5px] md:text-[9px] text-[#1B365D] font-bold uppercase tracking-wide sm:tracking-wider mt-1 leading-none">
                 Всё для строительства и ремонта
               </span>
             </div>
@@ -177,7 +196,7 @@ export default function Header() {
           </div>
 
           {/* Mobile Icon Menu (< 768px) */}
-          <div className="flex md:hidden items-center gap-3 text-gray-700">
+          <div className="flex md:hidden items-center gap-2 text-gray-700">
             <Link href="/login" className="p-1 hover:text-[#2563EB]">
               <User className="w-5 h-5 stroke-[1.8]" />
             </Link>
@@ -252,7 +271,8 @@ export default function Header() {
           <form className="flex-1 relative flex items-center h-10 md:h-11" onSubmit={(e) => e.preventDefault()}>
             <input
               type="text"
-              placeholder="Найти среди 50000 товаров. Например: Дрель Bosch"
+              placeholder={isMobile ? 'Поиск...' : 'Найти среди 50000 товаров. Например: Дрель Bosch'}
+              aria-label="Поиск по каталогу"
               className="w-full h-full border-2 border-[#2563EB] rounded-lg pl-3 md:pl-4 pr-11 md:pr-12 text-xs text-gray-800 placeholder-gray-400 focus:outline-none bg-white"
             />
             <button
@@ -266,20 +286,20 @@ export default function Header() {
         </div>
 
         {/* Desktop Right Icons (1024px+) */}
-        <div className="hidden lg:flex items-center gap-6 xl:gap-7 text-gray-700 shrink-0">
+        <div className="hidden lg:flex items-center gap-5 xl:gap-7 text-gray-700 shrink-0">
           <Link href="/promotions" className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">
             <Gift className="w-6 h-6 stroke-[1.5] group-hover:scale-105 transition-transform" />
-            <span className="text-[11px] text-gray-500 font-normal">Все акции</span>
+            <span className="hidden xl:inline text-[11px] text-gray-500 font-normal">Все акции</span>
           </Link>
 
           <Link href="/login" className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">
             <User className="w-6 h-6 stroke-[1.5] group-hover:scale-105 transition-transform" />
-            <span className="text-[11px] text-gray-500 font-normal">Войти</span>
+            <span className="hidden xl:inline text-[11px] text-gray-500 font-normal">Войти</span>
           </Link>
 
           <Link href="/compare" className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">
             <BarChart2 className="w-6 h-6 stroke-[1.5] group-hover:scale-105 transition-transform" />
-            <span className="text-[11px] text-gray-500 font-normal">Сравнение</span>
+            <span className="hidden xl:inline text-[11px] text-gray-500 font-normal">Сравнение</span>
           </Link>
 
           <Link href="/favorites" className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group relative">
@@ -291,7 +311,7 @@ export default function Header() {
                 </span>
               )}
             </div>
-            <span className="text-[11px] text-gray-500 font-normal">Избранное</span>
+            <span className="hidden xl:inline text-[11px] text-gray-500 font-normal">Избранное</span>
           </Link>
 
           <button 
@@ -307,7 +327,7 @@ export default function Header() {
                 </span>
               )}
             </div>
-            <span className="text-[11px] text-gray-500 font-normal">Корзина</span>
+            <span className="hidden xl:inline text-[11px] text-gray-500 font-normal">Корзина</span>
           </button>
         </div>
 
