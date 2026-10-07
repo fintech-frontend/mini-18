@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { styles } from "@/styles/index.styles";
 function Kontakt() {
     const contacts = [
         {
@@ -81,9 +80,9 @@ function Kontakt() {
         });
     };
     return (
-        <main >
+        <div >
             {/* BOSH CONTAINER */}
-            <div className={styles.container}>
+            <div className="w-full">
                 {/* CONTACTS + MAP */}
                 <section className="py-10 sm:py-12 md:py-16">
 
@@ -92,13 +91,13 @@ function Kontakt() {
 
                         {/* MAP */}
 
-<iframe
-  src="https://www.google.com/maps?q=Карачаево-Черкесская%20Республика,%20Черкесск,%20Октябрьская%20улица,%20301&output=embed"
-  className="h-75 w-full rounded-xl sm:h-100 md:h-125 lg:h-152.5"
-  loading="lazy"
-  allowFullScreen
-  referrerPolicy="no-referrer-when-downgrade"
-/>
+                        <iframe
+                            src="https://www.google.com/maps?q=Карачаево-Черкесская%20Республика,%20Черкесск,%20Октябрьская%20улица,%20301&output=embed"
+                            className="h-75 w-full rounded-xl sm:h-100 md:h-125 lg:h-152.5"
+                            loading="lazy"
+                            allowFullScreen
+                            referrerPolicy="no-referrer-when-downgrade"
+                        />
 
                         {/* CONTACT CARD */}
 
@@ -347,7 +346,7 @@ function Kontakt() {
                 </section>
 
             </div>
-        </main>
+        </div>
     );
 }
 

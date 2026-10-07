@@ -132,7 +132,7 @@ export default function FooterWithMenu() {
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = (e: React.ChangeEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email) return;
     alert(`Подписка оформлена: ${email}`);

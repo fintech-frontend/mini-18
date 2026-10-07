@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/lib/store';
 import { 
   Menu, 
   Search, 
@@ -38,17 +40,19 @@ const catalogCategories = [
 ];
 
 export default function Header() {
+  const isLoggedIn = useSelector((state: RootState) => !!state.auth.token);
+  const accountHref = isLoggedIn ? "/profile" : "/login";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCallbackOpen, setIsCallbackOpen] = useState(false);
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Dinamik sanoqlar
-  const [cartCount, setCartCount] = useState(0); 
-  const [favoritesCount, setFavoritesCount] = useState(0);
+  const [cartCount] = useState(0); 
+  const [favoritesCount] = useState(0);
 
   return (
-    <header className="w-full bg-white border-b border-gray-100 font-sans sticky top-0 z-40 select-none">
+    <header className="  w-full bg-white border-b border-gray-100 font-sans sticky top-0 z-40 select-none">
       
       {/* ================= 1. TOP BAR ================= */}
       <div className={` border-b border-gray-100 bg-white w-full`}>
@@ -137,9 +141,9 @@ export default function Header() {
               <span className="text-[10px] text-gray-500 font-normal">Все акции</span>
             </Link>
 
-            <Link href="/login" className="flex flex-col items-center gap-0.5 hover:text-[#2563EB] transition-colors group">
+            <Link href={accountHref} className="flex flex-col items-center gap-0.5 hover:text-[#2563EB] transition-colors group">
               <User className="w-5 h-5 stroke-[1.5] group-hover:scale-105 transition-transform" />
-              <span className="text-[10px] text-gray-500 font-normal">Войти</span>
+              <span className="text-[10px] text-gray-500 font-normal">{isLoggedIn ? "Кабинет" : "Войти"}</span>
             </Link>
 
             <Link href="/compare" className="flex flex-col items-center gap-0.5 hover:text-[#2563EB] transition-colors group">
@@ -178,7 +182,7 @@ export default function Header() {
 
           {/* Mobile Icon Menu (< 768px) */}
           <div className="flex md:hidden items-center gap-3 text-gray-700">
-            <Link href="/login" className="p-1 hover:text-[#2563EB]">
+            <Link href={accountHref} className="p-1 hover:text-[#2563EB]">
               <User className="w-5 h-5 stroke-[1.8]" />
             </Link>
             <Link href="/compare" className="p-1 hover:text-[#2563EB]">
@@ -272,9 +276,9 @@ export default function Header() {
             <span className="text-[11px] text-gray-500 font-normal">Все акции</span>
           </Link>
 
-          <Link href="/login" className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">
+          <Link href={accountHref} className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">
             <User className="w-6 h-6 stroke-[1.5] group-hover:scale-105 transition-transform" />
-            <span className="text-[11px] text-gray-500 font-normal">Войти</span>
+            <span className="text-[11px] text-gray-500 font-normal">{isLoggedIn ? "Кабинет" : "Войти"}</span>
           </Link>
 
           <Link href="/compare" className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">

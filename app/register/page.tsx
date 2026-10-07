@@ -125,12 +125,12 @@ export default function RegistrationPage() {
   };
 
   return (
-    <main className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white">
       {/* =========================
           CONTAINER
       ========================== */}
 
-      <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-10">
+      <div className="w-full">
         {/* =========================
             BREADCRUMB
         ========================== */}
@@ -534,6 +534,6 @@ export default function RegistrationPage() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
