@@ -6,8 +6,7 @@ import { Providers } from "./providers";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import { CompareProvider } from "@/context/CompareContext";
 
-import Header from "@/components/navbar/page";
-import FooterWithMenu from "@/components/footer/page";
+import SiteShell from "@/components/SiteShell";
 import { CartProvider } from "@/context/CartContext";
 
 const helvetica = localFont({
@@ -51,9 +50,7 @@ export default function RootLayout({
             <CompareProvider>
               <CartProvider>
 
-                <Header />
-                <main className="flex-1">{children}</main>
-                <FooterWithMenu />
+                <SiteShell>{children}</SiteShell>
 
               </CartProvider>
             </CompareProvider>
