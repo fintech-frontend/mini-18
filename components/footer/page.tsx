@@ -10,8 +10,8 @@ import { styles } from '@/styles/index.styles';
 // ==========================================
 
 const menuItems = [
-  { label: 'ВСЕ АКЦИИ', href: '/promotions', isSpecial: true },
-  { label: 'О КОМПАНИИ', href: '/about' },
+  { label: 'ВСЕ АКЦИИ', href: '/akcii', isSpecial: true },
+  { label: 'О КОМПАНИИ', href: '/Ocompany' },
   { label: 'ОПЛАТА', href: '/payment' },
   { label: 'ДОСТАВКА', href: '/delivery' },
   { label: 'ВОЗВРАТ', href: '/returns' },
@@ -22,7 +22,7 @@ const menuItems = [
 ];
 
 const footerInformation = [
-  { label: 'О компании', href: '/about' },
+  { label: 'О компании', href: '/Ocompany' },
   { label: 'Вопрос-ответ', href: '/faq' },
   { label: 'Оплата', href: '/payment' },
   { label: 'Новости', href: '/news' },
@@ -31,7 +31,7 @@ const footerInformation = [
   { label: 'Возврат', href: '/returns' },
   { label: 'Вход \\ Регистрация', href: '/login' },
   { label: 'Отзывы', href: '/reviews' },
-  { label: 'Все акции', href: '/promotions' },
+  { label: 'Все акции', href: '/akcii' },
 ];
 
 const footerCatalogColumn1 = [
@@ -132,7 +132,7 @@ export default function FooterWithMenu() {
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = (e: React.ChangeEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email) return;
     alert(`Подписка оформлена: ${email}`);

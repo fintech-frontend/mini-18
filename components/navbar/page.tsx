@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/lib/store';
 import { 
   Menu, 
   Search, 
@@ -13,9 +15,12 @@ import {
   X 
 } from 'lucide-react';
 import { styles } from '@/styles/index.styles';
+import { useCart } from '@/context/CartContext';
+import { useFavorites } from '@/context/FavoritesContext';
+import CartDrawer from '@/components/cart/CartDrawer';
 
 const navItems = [
-  { label: 'О компании', uppercaseLabel: 'О КОМПАНИИ', href: '/about' },
+  { label: 'О компании', uppercaseLabel: 'О КОМПАНИИ', href: '/Ocompany' },
   { label: 'Оплата', uppercaseLabel: 'ОПЛАТА', href: '/payment' },
   { label: 'Доставка', uppercaseLabel: 'ДОСТАВКА', href: '/delivery' },
   { label: 'Возврат', uppercaseLabel: 'ВОЗВРАТ', href: '/returns' },
@@ -37,17 +42,22 @@ const catalogCategories = [
 ];
 
 export default function Header() {
+  const isLoggedIn = useSelector((state: RootState) => !!state.auth.token);
+  const accountHref = isLoggedIn ? "/profile" : "/login";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCallbackOpen, setIsCallbackOpen] = useState(false);
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Dinamik sanoqlar
-  const [cartCount, setCartCount] = useState(0); 
-  const [favoritesCount, setFavoritesCount] = useState(0);
+  // Dinamik sanoqlar (savatcha — umumiy dona soni, sevimlilar — mahsulotlar soni)
+  const { totalCount: cartCount } = useCart();
+  const { favorites } = useFavorites();
+  const favoritesCount = favorites.length;
+  const closeCart = useCallback(() => setIsCartOpen(false), []);
+  const badge = (n: number) => (n > 99 ? '99+' : n);
 
   return (
-    <header className="w-full bg-white border-b border-gray-100 font-sans sticky top-0 z-40 select-none">
+    <header className="  w-full bg-white border-b border-gray-100 font-sans sticky top-0 z-40 select-none">
       
       {/* ================= 1. TOP BAR ================= */}
       <div className={` border-b border-gray-100 bg-white w-full`}>
@@ -131,14 +141,14 @@ export default function Header() {
 
           {/* Tablet Icon Menu (768px - 1024px) */}
           <div className="hidden md:flex lg:hidden items-center gap-5 md:gap-6 text-gray-700 shrink-0">
-            <Link href="/promotions" className="flex flex-col items-center gap-0.5 hover:text-[#2563EB] transition-colors group">
+            <Link href="/akcii" className="flex flex-col items-center gap-0.5 hover:text-[#2563EB] transition-colors group">
               <Gift className="w-5 h-5 stroke-[1.5] group-hover:scale-105 transition-transform" />
               <span className="text-[10px] text-gray-500 font-normal">Все акции</span>
             </Link>
 
-            <Link href="/login" className="flex flex-col items-center gap-0.5 hover:text-[#2563EB] transition-colors group">
+            <Link href={accountHref} className="flex flex-col items-center gap-0.5 hover:text-[#2563EB] transition-colors group">
               <User className="w-5 h-5 stroke-[1.5] group-hover:scale-105 transition-transform" />
-              <span className="text-[10px] text-gray-500 font-normal">Войти</span>
+              <span className="text-[10px] text-gray-500 font-normal">{isLoggedIn ? "Кабинет" : "Войти"}</span>
             </Link>
 
             <Link href="/compare" className="flex flex-col items-center gap-0.5 hover:text-[#2563EB] transition-colors group">
@@ -150,8 +160,8 @@ export default function Header() {
               <div className="relative">
                 <Heart className="w-5 h-5 stroke-[1.5] group-hover:scale-105 transition-transform" />
                 {favoritesCount > 0 && (
-                  <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                    {favoritesCount}
+                  <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold min-w-3.5 h-3.5 px-0.5 rounded-full flex items-center justify-center">
+                    {badge(favoritesCount)}
                   </span>
                 )}
               </div>
@@ -166,8 +176,8 @@ export default function Header() {
               <div className="relative">
                 <ShoppingCart className="w-5 h-5 stroke-[1.5] group-hover:scale-105 transition-transform" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                    {cartCount}
+                  <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold min-w-3.5 h-3.5 px-0.5 rounded-full flex items-center justify-center">
+                    {badge(cartCount)}
                   </span>
                 )}
               </div>
@@ -177,7 +187,7 @@ export default function Header() {
 
           {/* Mobile Icon Menu (< 768px) */}
           <div className="flex md:hidden items-center gap-3 text-gray-700">
-            <Link href="/login" className="p-1 hover:text-[#2563EB]">
+            <Link href={accountHref} className="p-1 hover:text-[#2563EB]">
               <User className="w-5 h-5 stroke-[1.8]" />
             </Link>
             <Link href="/compare" className="p-1 hover:text-[#2563EB]">
@@ -186,8 +196,8 @@ export default function Header() {
             <Link href="/favorites" className="p-1 hover:text-[#2563EB] relative">
               <Heart className="w-5 h-5 stroke-[1.8]" />
               {favoritesCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-[#D93829] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {favoritesCount}
+                <span className="absolute -top-1.5 -right-1.5 bg-[#D93829] text-white text-[9px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                  {badge(favoritesCount)}
                 </span>
               )}
             </Link>
@@ -198,8 +208,8 @@ export default function Header() {
             >
               <ShoppingCart className="w-5 h-5 stroke-[1.8]" />
               {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-[#D93829] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {cartCount}
+                <span className="absolute -top-1.5 -right-1.5 bg-[#D93829] text-white text-[9px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                  {badge(cartCount)}
                 </span>
               )}
             </button>
@@ -266,14 +276,14 @@ export default function Header() {
 
         {/* Desktop Right Icons (1024px+) */}
         <div className="hidden lg:flex items-center gap-6 xl:gap-7 text-gray-700 shrink-0">
-          <Link href="/promotions" className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">
+          <Link href="/akcii" className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">
             <Gift className="w-6 h-6 stroke-[1.5] group-hover:scale-105 transition-transform" />
             <span className="text-[11px] text-gray-500 font-normal">Все акции</span>
           </Link>
 
-          <Link href="/login" className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">
+          <Link href={accountHref} className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">
             <User className="w-6 h-6 stroke-[1.5] group-hover:scale-105 transition-transform" />
-            <span className="text-[11px] text-gray-500 font-normal">Войти</span>
+            <span className="text-[11px] text-gray-500 font-normal">{isLoggedIn ? "Кабинет" : "Войти"}</span>
           </Link>
 
           <Link href="/compare" className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">
@@ -285,8 +295,8 @@ export default function Header() {
             <div className="relative">
               <Heart className="w-6 h-6 stroke-[1.5] group-hover:scale-105 transition-transform" />
               {favoritesCount > 0 && (
-                <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {favoritesCount}
+                <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                  {badge(favoritesCount)}
                 </span>
               )}
             </div>
@@ -301,8 +311,8 @@ export default function Header() {
             <div className="relative">
               <ShoppingCart className="w-6 h-6 stroke-[1.5] group-hover:scale-105 transition-transform" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {cartCount}
+                <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                  {badge(cartCount)}
                 </span>
               )}
             </div>
@@ -312,8 +322,8 @@ export default function Header() {
 
       </div>
 
-      {/* Cart Discount Modal */}
-    
+      {/* Savatcha */}
+      <CartDrawer open={isCartOpen} onClose={closeCart} />
 
       {/* Mobile/Tablet Sidebar Menu */}
       {isMobileMenuOpen && (
@@ -337,7 +347,7 @@ export default function Header() {
 
             <nav className="flex-1 overflow-y-auto divide-y divide-gray-100">
               <Link
-                href="/promotions"
+                href="/akcii"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="flex items-center gap-3 px-5 py-3.5 text-xs font-semibold text-gray-900 hover:bg-gray-50 uppercase tracking-wide"
               >

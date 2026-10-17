@@ -1,6 +1,19 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { ApiListResponse, ApiProduct, ApiCategory, ApiBrand } from "@/types/api";
 
+// Backend ro'yxatni ba'zan massiv, ba'zan { count, pages, results } ko'rinishida qaytaradi —
+// komponentlar doim bir xil shaklni olishi uchun shu yerda moslaymiz
+function toListResponse<T>(res: unknown): ApiListResponse<T> {
+  if (Array.isArray(res)) return { count: res.length, pages: 1, results: res as T[] };
+  const obj = (res ?? {}) as Partial<ApiListResponse<T>>;
+  const results = Array.isArray(obj.results) ? obj.results : [];
+  return {
+    count: typeof obj.count === "number" ? obj.count : results.length,
+    pages: typeof obj.pages === "number" ? obj.pages : 1,
+    results,
+  };
+}
+
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
@@ -20,6 +33,7 @@ export const apiSlice = createApi({
         const qs = query.toString();
         return `/products/${qs ? `?${qs}` : ""}`;
       },
+      transformResponse: (res: unknown) => toListResponse<ApiProduct>(res),
       providesTags: ["Product"],
     }),
 
@@ -30,11 +44,13 @@ export const apiSlice = createApi({
 
     getCategories: builder.query<ApiCategory[], void>({
       query: () => "/categories/",
+      transformResponse: (res: unknown) => toListResponse<ApiCategory>(res),
       providesTags: ["Category"],
     }),
 
     getBrands: builder.query<ApiBrand[], void>({
       query: () => "/brands/",
+      transformResponse: (res: unknown) => toListResponse<ApiBrand>(res),
       providesTags: ["Brand"],
     }),
   }),

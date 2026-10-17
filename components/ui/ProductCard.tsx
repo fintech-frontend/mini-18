@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, BarChart2, ShoppingCart } from "lucide-react";
+import { Heart, BarChart2, ShoppingCart, Check } from "lucide-react";
 import { Product } from "@/types/product";
 import { useFavorites } from "@/context/FavoritesContext";
 import { useCompare } from "@/context/CompareContext";
+import { useCart } from "@/context/CartContext";
 
 export default function ProductCard({ product }: { product: Product }) {
   const {
@@ -22,9 +23,11 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const { toggleFavorite, isFavorite } = useFavorites();
   const { toggleCompare, isInCompare } = useCompare();
+  const { addToCart, cartItems } = useCart();
 
   const favorite = isFavorite(id);
   const inCompare = isInCompare(id);
+  const cartQty = cartItems.find((item) => item.id === id)?.quantity ?? 0;
 
   // API'dan kelgan mahsulotlarda slug bor, mock data'da bo'lmasligi mumkin — ikkalasini ham qo'llab-quvvatlaymiz
   const href = `/products/${slug ?? id}`;
@@ -76,13 +79,28 @@ export default function ProductCard({ product }: { product: Product }) {
 
       {/* Actions */}
       <div className="flex items-center gap-1.5 xl:gap-2">
-        <Link
-          href={href}
-          className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-1 py-2 text-xs xl:text-sm font-medium text-white transition-colors hover:bg-blue-700"
+        <button
+          type="button"
+          onClick={() => addToCart(product)}
+          className={`flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-1 py-2 text-xs xl:text-sm font-medium text-white transition-colors ${
+            cartQty > 0
+              ? "bg-green-600 hover:bg-green-700"
+              : "bg-blue-600 hover:bg-blue-700"
+          }`}
         >
-          <ShoppingCart size={16} className="hidden shrink-0 xl:block" />
-          Купить
-        </Link>
+          {cartQty > 0 ? (
+            <>
+              <Check size={16} className="shrink-0" />
+              <span className="truncate xl:hidden">{cartQty} шт.</span>
+              <span className="hidden truncate xl:inline">В корзине ({cartQty})</span>
+            </>
+          ) : (
+            <>
+              <ShoppingCart size={16} className="hidden shrink-0 xl:block" />
+              Купить
+            </>
+          )}
+        </button>
         <button
           type="button"
           onClick={() => toggleFavorite(product)}

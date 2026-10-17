@@ -6,9 +6,9 @@ import { Providers } from "./providers";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import { CompareProvider } from "@/context/CompareContext";
 
-import Header from "@/components/navbar/page";
-import FooterWithMenu from "@/components/footer/page";
+import SiteShell from "@/components/SiteShell";
 import { CartProvider } from "@/context/CartContext";
+
 const helvetica = localFont({
   src: [
     {
@@ -32,7 +32,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Next App",
+  title: "O! Company",
   description: "Next.js",
 };
 
@@ -41,18 +41,16 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
-      lang="en"
+      lang="ru"
       className={`${geistSans.variable} ${geistMono.variable} ${helvetica.variable}`}
     >
-      <body className="min-h-screen flex flex-col antialiased">
+      <body className="min-h-screen flex flex-col antialiased overflow-x-clip">
         <Providers>
           <FavoritesProvider>
             <CompareProvider>
               <CartProvider>
 
-                <Header />
-                <main className="flex-1">{children}</main>
-                <FooterWithMenu />
+                <SiteShell>{children}</SiteShell>
 
               </CartProvider>
             </CompareProvider>
@@ -62,3 +60,4 @@ export default function RootLayout({
     </html>
   );
 }
+
