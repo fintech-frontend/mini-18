@@ -7,7 +7,8 @@ import type {
 import type { RootState } from "../store";
 import { logout, setAccessToken } from "../authSlice";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL; // https://fixingtools.pythonanywhere.com/api
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "https://fixingtools.pythonanywhere.com/api";
 
 // Swagger: POST /api/auth/token/refresh/  { refresh } -> { access }
 const REFRESH_URL = "/auth/token/refresh/";
