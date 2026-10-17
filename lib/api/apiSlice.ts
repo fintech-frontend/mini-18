@@ -28,12 +28,12 @@ export const apiSlice = createApi({
       providesTags: ["Product"],
     }),
 
-    getCategories: builder.query<ApiListResponse<ApiCategory>, void>({
+    getCategories: builder.query<ApiCategory[], void>({
       query: () => "/categories/",
       providesTags: ["Category"],
     }),
 
-    getBrands: builder.query<ApiListResponse<ApiBrand>, void>({
+    getBrands: builder.query<ApiBrand[], void>({
       query: () => "/brands/",
       providesTags: ["Brand"],
     }),
