@@ -1,64 +1,55 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, ImageOff, ShoppingCart } from "lucide-react";
+import { Check, ShoppingCart } from "lucide-react";
 import { FiBarChart2 } from "react-icons/fi";
 import { GoHeart, GoHeartFill } from "react-icons/go";
 
+import { useCart } from "@/hooks/useCart";
+import { MAX_COMPARE_ITEMS, useCompare } from "@/hooks/useCompare";
+import { useFavorites } from "@/hooks/useFavorites";
+import ProductImage from "@/components/ui/ProductImage";
+import { routes } from "@/lib/routes";
 import { cn, formatPrice } from "@/lib/utils";
 import type { Product } from "@/types/productsTypes";
 
 type Props = {
   product: Product;
-  inCart: boolean;
-  isFavorite: boolean;
-  inCompare: boolean;
-  onBuy: (id: number) => void;
-  onToggleFavorite: (id: number) => void;
-  onToggleCompare: (id: number) => void;
 };
 
-function ProductImage({ src, alt }: { src: string; alt: string }) {
-  const [failed, setFailed] = useState(false);
+/** Taqqoslash limiti haqidagi xabar necha ms ko'rinib turadi */
+const LIMIT_NOTICE_MS = 2500;
 
-  if (failed) {
-    return (
-      <div className="flex h-full w-full items-center justify-center rounded-lg bg-[#F5F7F9] text-[#C3C8CF]">
-        <ImageOff className="size-8" aria-hidden />
-        <span className="sr-only">{alt}</span>
-      </div>
-    );
-  }
-
-  return (
-    <Image
-      src={src}
-      alt={alt}
-      fill
-      sizes="(max-width: 767px) 50vw, (max-width: 1535px) 33vw, 300px"
-      onError={() => setFailed(true)}
-      className="object-contain transition-transform duration-300 group-hover:scale-[1.03]"
-    />
-  );
-}
+const buyButton =
+  "flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-[6px] text-[14px] font-medium text-white transition-colors md:max-w-[130px] md:text-[15px]";
 
 const iconButton =
   "flex size-10 shrink-0 items-center justify-center rounded-[6px] border text-[18px] transition-colors";
 
-export default function ProductCard({
-  product,
-  inCart,
-  isFavorite,
-  inCompare,
-  onBuy,
-  onToggleFavorite,
-  onToggleCompare,
-}: Props) {
+export default function ProductCard({ product }: Props) {
+  const { addToCart, isInCart } = useCart();
+  const { toggleFavorite, isFavorite: checkFavorite } = useFavorites();
+  const { toggleCompare, isInCompare } = useCompare();
+  const [showLimitNotice, setShowLimitNotice] = useState(false);
+
+  const inCart = isInCart(product.id);
+  const isFavorite = checkFavorite(product.id);
+  const inCompare = isInCompare(product.id);
+
+  useEffect(() => {
+    if (!showLimitNotice) return;
+    const timer = setTimeout(() => setShowLimitNotice(false), LIMIT_NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [showLimitNotice]);
+
+  const handleCompare = () => {
+    if (toggleCompare(product.id) === "limit") setShowLimitNotice(true);
+  };
+
   return (
     <article className="group flex min-w-0 flex-col">
-      <Link href={`/catalog/${product.id}`} className="block">
+      <Link href={routes.product(product.id)} className="block">
         {/* IMAGE */}
         <div className="relative h-[150px] md:h-[200px] xl:h-[220px]">
           {product.hit && (
@@ -67,7 +58,12 @@ export default function ProductCard({
             </span>
           )}
 
-          <ProductImage src={product.image} alt={product.title} />
+          <ProductImage
+            src={product.image}
+            alt={product.title}
+            sizes="(max-width: 767px) 50vw, (max-width: 1535px) 33vw, 300px"
+            className="transition-transform duration-300 group-hover:scale-[1.03]"
+          />
         </div>
 
         {/* ARTICLE */}
@@ -102,30 +98,31 @@ export default function ProductCard({
 
       {/* ACTIONS */}
       <div className="mt-3 flex items-center gap-2 md:gap-2.5">
-        <button
-          type="button"
-          onClick={() => onBuy(product.id)}
-          aria-label={inCart ? "Товар в корзине" : `Купить ${product.title}`}
-          className={cn(
-            "flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-[6px] text-[14px] font-medium text-white transition-colors md:max-w-[130px] md:text-[15px]",
-            inCart
-              ? "bg-[#1AA36F] hover:bg-[#178F61]"
-              : "bg-[#186FD4] hover:bg-[#0F67D0]",
-          )}
-        >
-          {inCart ? (
+        {/* Savatda bo'lsa qayta qo'shmaymiz — savat sahifasiga olib boradi */}
+        {inCart ? (
+          <Link
+            href="/cart"
+            aria-label={`${product.title} — в корзине, перейти в корзину`}
+            className={cn(buyButton, "bg-[#1AA36F] hover:bg-[#178F61]")}
+          >
             <Check className="size-[18px] shrink-0" />
-          ) : (
+            <span className="hidden md:inline">В корзине</span>
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={() => addToCart(product.id)}
+            aria-label={`Купить ${product.title}`}
+            className={cn(buyButton, "bg-[#186FD4] hover:bg-[#0F67D0]")}
+          >
             <ShoppingCart className="size-[18px] shrink-0" />
-          )}
-          <span className="hidden md:inline">
-            {inCart ? "В корзине" : "Купить"}
-          </span>
-        </button>
+            <span className="hidden md:inline">Купить</span>
+          </button>
+        )}
 
         <button
           type="button"
-          onClick={() => onToggleFavorite(product.id)}
+          onClick={() => toggleFavorite(product.id)}
           aria-label={isFavorite ? "Убрать из избранного" : "В избранное"}
           aria-pressed={isFavorite}
           className={cn(
@@ -140,7 +137,7 @@ export default function ProductCard({
 
         <button
           type="button"
-          onClick={() => onToggleCompare(product.id)}
+          onClick={handleCompare}
           aria-label={inCompare ? "Убрать из сравнения" : "Сравнить"}
           aria-pressed={inCompare}
           className={cn(
@@ -153,6 +150,15 @@ export default function ProductCard({
           <FiBarChart2 />
         </button>
       </div>
+
+      {showLimitNotice && (
+        <p role="status" className="mt-2 text-[12px] leading-[1.3] text-[#D93829]">
+          В сравнении может быть не больше {MAX_COMPARE_ITEMS} товаров.{" "}
+          <Link href="/compare" className="underline underline-offset-2">
+            Открыть сравнение
+          </Link>
+        </p>
+      )}
     </article>
   );
 }

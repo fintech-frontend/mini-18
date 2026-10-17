@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
-import type { FilterState } from "@/types/productsTypes";
+import type { FilterOptions, FilterState } from "@/types/productsTypes";
 import CatalogFilters from "./CatalogFilters";
 
 type Props = {
   open: boolean;
   value: FilterState;
+  options: FilterOptions;
   onClose: () => void;
   onApply: (next: FilterState) => void;
 };
@@ -20,6 +21,7 @@ type Props = {
 export default function FiltersDrawer({
   open,
   value,
+  options,
   onClose,
   onApply,
 }: Props) {
@@ -57,12 +59,22 @@ export default function FiltersDrawer({
       />
 
       {/* Ichki holat har ochilishda joriy filtrlardan boshlanadi */}
-      <DrawerPanel value={value} onClose={onClose} onApply={onApply} />
+      <DrawerPanel
+        value={value}
+        options={options}
+        onClose={onClose}
+        onApply={onApply}
+      />
     </div>
   );
 }
 
-function DrawerPanel({ value, onClose, onApply }: Omit<Props, "open">) {
+function DrawerPanel({
+  value,
+  options,
+  onClose,
+  onApply,
+}: Omit<Props, "open">) {
   const [draft, setDraft] = useState<FilterState>(value);
 
   return (
@@ -81,7 +93,7 @@ function DrawerPanel({ value, onClose, onApply }: Omit<Props, "open">) {
       </div>
 
       <div className="flex-1 overflow-y-auto overscroll-contain px-[15px] md:px-[25px]">
-        <CatalogFilters value={draft} onChange={setDraft} />
+        <CatalogFilters value={draft} options={options} onChange={setDraft} />
       </div>
 
       <div className="border-t border-[#ECEEF1] bg-white p-[15px] md:px-[25px]">

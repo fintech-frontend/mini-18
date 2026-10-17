@@ -1,5 +1,9 @@
 export type Product = {
   id: number;
+  slug: string;
+  /** Kategoriya slug'i (API'dagi category.slug) */
+  category: string;
+  categoryTitle: string;
 
   title: string;
   article: string;
@@ -65,3 +69,45 @@ export type DimensionKey =
 
 export type SortValue =
   "price-desc" | "price-asc" | "name-asc" | "discount-desc";
+
+/** Filtr panelidagi bitta variant: "MAKITA (8)" */
+export type FilterOption = {
+  /** URL va API'ga yuboriladigan qiymat (tur / brend uchun — slug) */
+  value: string;
+  /** Ekranda ko'rinadigan nom (bo'lmasa value ko'rsatiladi) */
+  label?: string;
+  count: number;
+};
+
+export type PriceRange = {
+  min: number;
+  max: number;
+  step: number;
+};
+
+/** Filtr paneli variantlari — API'ning /products/filters/ endpointidan */
+export type FilterOptions = Record<FilterListKey, FilterOption[]> & {
+  price: PriceRange;
+  /** Kategoriyadagi jami faol mahsulotlar soni */
+  total: number;
+};
+
+/** URL'da saqlanadigan katalog holati */
+export type CatalogQuery = {
+  filters: FilterState;
+  sort: SortValue;
+  perPage: number;
+  page: number;
+  search: string;
+};
+
+export type CatalogCategory = {
+  slug: string;
+  title: string;
+  /** Sahifa pastidagi SEO matn (bo'lmasa blok ko'rsatilmaydi) */
+  seo?: {
+    title: string;
+    paragraphs: string[];
+    list: { title: string; text: string }[];
+  };
+};

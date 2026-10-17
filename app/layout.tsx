@@ -29,8 +29,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Next App",
-  description: "Next.js",
+  title: "Стройоптторг — всё для строительства и ремонта",
+  description:
+    "Интернет-магазин строительных и отделочных материалов, инструмента и сантехники.",
 };
 
 export default function RootLayout({

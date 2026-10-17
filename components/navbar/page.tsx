@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useCallback, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   Menu, 
   Search, 
@@ -13,7 +14,10 @@ import {
   X 
 } from 'lucide-react';
 import { styles } from '@/styles/index.styles';
-import CartDiscountBanner from '../CartDiscountBanner';
+import CartDrawer from '@/components/cart/CartDrawer';
+import { useCart } from '@/hooks/useCart';
+import { useFavorites } from '@/hooks/useFavorites';
+import { routes } from '@/lib/routes';
 
 const navItems = [
   { label: 'О компании', uppercaseLabel: 'О КОМПАНИИ', href: '/about' },
@@ -29,12 +33,12 @@ const navItems = [
 const catalogCategories = [
   { title: 'Строительные материалы', href: '/catalog/building-materials' },
   { title: 'Отделочные материалы', href: '/catalog/finishing-materials' },
-  { title: 'Электроинструмент', href: '/catalog' },
+  { title: 'Электроинструмент', href: '/catalog/power-tools' },
   { title: 'Ручной инструмент', href: '/catalog/hand-tools' },
   { title: 'Сантехника', href: '/catalog/plumbing' },
   { title: 'Сантехника и крепеж', href: '/catalog/fasteners' },
   { title: 'Электротовары', href: '/catalog/electrical' },
-  { title: 'Cад и огород', href: '/catalog/garden' },
+  { title: 'Сад и огород', href: '/catalog/garden' },
 ];
 
 // 360px da qidiruv placeholder'i qisqa bo'ladi (maketdagidek "Поиск...")
@@ -60,10 +64,19 @@ export default function Header() {
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Dinamik sanoqlar
-  // TODO: global savat / izbrannoe store ulanganda shu yerga bog'lanadi
-  const [cartCount] = useState(0);
-  const [favoritesCount] = useState(0);
+  const closeCart = useCallback(() => setIsCartOpen(false), []);
+  const router = useRouter();
+
+  // Qidiruv katalogga ?search= bilan o'tadi
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const query = String(new FormData(e.currentTarget).get('search') ?? '').trim();
+    router.push(query ? routes.search(query) : routes.catalog);
+  };
+
+  // Dinamik sanoqlar (localStorage'dagi savat va izbrannoe)
+  const { totalCount: cartCount } = useCart();
+  const { count: favoritesCount } = useFavorites();
   const isMobile = useIsMobile();
 
   return (
@@ -268,9 +281,10 @@ export default function Header() {
             </>
           )}
 
-          <form className="flex-1 relative flex items-center h-10 md:h-11" onSubmit={(e) => e.preventDefault()}>
+          <form role="search" className="flex-1 relative flex items-center h-10 md:h-11" onSubmit={handleSearch}>
             <input
-              type="text"
+              type="search"
+              name="search"
               placeholder={isMobile ? 'Поиск...' : 'Найти среди 50000 товаров. Например: Дрель Bosch'}
               aria-label="Поиск по каталогу"
               className="w-full h-full border-2 border-[#2563EB] rounded-lg pl-3 md:pl-4 pr-11 md:pr-12 text-xs text-gray-800 placeholder-gray-400 focus:outline-none bg-white"
@@ -333,11 +347,8 @@ export default function Header() {
 
       </div>
 
-      {/* Cart Discount Modal */}
-      <CartDiscountBanner 
-        isOpen={isCartOpen} 
-        onClose={() => setIsCartOpen(false)} 
-      />
+      {/* Savat paneli */}
+      <CartDrawer isOpen={isCartOpen} onClose={closeCart} />
 
       {/* Mobile/Tablet Sidebar Menu */}
       {isMobileMenuOpen && (

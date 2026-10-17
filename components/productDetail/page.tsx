@@ -4,39 +4,60 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
+import ProductCard from "@/components/catalog/ProductCard";
+import ProductPurchasePanel from "@/components/productDetail/ProductPurchasePanel";
+import ProductReviews from "@/components/productDetail/ProductReviews";
+import { routes } from "@/lib/routes";
 import { formatPrice } from "@/lib/utils";
 import type { Product } from "@/types/productsTypes";
 import { styles } from "@/styles/index.styles";
 
 type Props = {
   product: Product;
+  /** Server'da yuklanadi (app/product/[id]/page.tsx) */
+  similarProducts: Product[];
 };
 
-export default function ProductDetail({ product }: Props) {
-  const [activeImage, setActiveImage] = useState(product.image);
+export default function ProductDetail({ product, similarProducts }: Props) {
+  // Rasm bo'lmasligi mumkin (API image_url: null)
+  const images = (product.gallery?.length ? product.gallery : [product.image]).filter(Boolean);
+  const [activeImage, setActiveImage] = useState(images[0] ?? "");
   const [failedImages, setFailedImages] = useState<string[]>([]);
-
-  const images = product.gallery?.length ? product.gallery : [product.image];
 
   return (
     <div className="w-full bg-white">
       <div className={styles.container}>
         {/* BREADCRUMB */}
-        <div className="pt-3 text-[13px] leading-relaxed text-[#828892] lg:pt-7">
+        <nav
+          aria-label="Хлебные крошки"
+          className="pt-3 text-[13px] leading-relaxed text-[#828892] lg:pt-7"
+        >
           <Link href="/" className="text-[#303640] hover:underline">
-            Стройонтторг
+            Стройоптторг
           </Link>
 
           <span className="mx-2">/</span>
 
-          <Link href="/catalog" className="text-[#303640] hover:underline">
-            Электроинструмент
+          <Link href={routes.catalog} className="text-[#303640] hover:underline">
+            Каталог
           </Link>
+
+          {product.category && (
+            <>
+              <span className="mx-2">/</span>
+              <Link
+                href={routes.category(product.category)}
+                className="text-[#303640] hover:underline"
+              >
+                {product.categoryTitle}
+              </Link>
+            </>
+          )}
 
           <span className="mx-2">/</span>
 
-          {product.title}
-        </div>
+          <span aria-current="page">{product.title}</span>
+        </nav>
 
         {/* PRODUCT: 360 -> ustma-ust, 768 -> 2 ustun, 1024+ -> chapda vertikal galereya */}
         <div className="mt-5 grid gap-6 md:grid-cols-[minmax(0,1fr)_320px] lg:mt-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
@@ -79,7 +100,7 @@ export default function ProductDetail({ product }: Props) {
                   </span>
                 )}
 
-                {failedImages.includes(activeImage) ? (
+                {!activeImage || failedImages.includes(activeImage) ? (
                   <div className="flex h-full w-full items-center justify-center rounded-xl bg-[#F5F7F9] text-sm text-[#A0A5AC]">
                     Изображение недоступно
                   </div>
@@ -157,30 +178,8 @@ export default function ProductDetail({ product }: Props) {
               )}
             </div>
 
-            {/* BUY */}
-            <button
-              type="button"
-              className="mt-6 h-12 w-full rounded-[7px] bg-[#1976E8] text-sm font-semibold text-white transition hover:bg-[#0F67D0]"
-            >
-              Купить
-            </button>
-
-            {/* FAVORITE */}
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                className="h-11 rounded-[7px] border border-[#DCE0E5] text-sm font-medium transition hover:bg-[#F5F6F8]"
-              >
-                ♡ В избранное
-              </button>
-
-              <button
-                type="button"
-                className="h-11 rounded-[7px] border border-[#DCE0E5] text-sm font-medium transition hover:bg-[#F5F6F8]"
-              >
-                Сравнить
-              </button>
-            </div>
+            {/* BUY / FAVORITE / COMPARE */}
+            <ProductPurchasePanel product={product} />
           </div>
         </div>
 
@@ -214,6 +213,33 @@ export default function ProductDetail({ product }: Props) {
                     {value}
                   </div>
                 </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* SIMILAR */}
+        <ProductReviews
+          productId={product.id}
+          rating={product.rating}
+          reviewsCount={product.reviewsCount ?? 0}
+        />
+
+        {similarProducts.length > 0 && (
+          <section
+            aria-labelledby="similar-title"
+            className="border-t border-[#ECEEF1] pt-8 pb-12 lg:pt-10 lg:pb-16"
+          >
+            <h2
+              id="similar-title"
+              className="text-[22px] font-bold text-[#303640]"
+            >
+              Похожие товары
+            </h2>
+
+            <div className="mt-6 grid grid-cols-2 gap-x-[17px] gap-y-[25px] md:grid-cols-3 lg:grid-cols-4 lg:gap-x-5 2xl:gap-x-[30px]">
+              {similarProducts.map((item) => (
+                <ProductCard key={item.id} product={item} />
               ))}
             </div>
           </section>

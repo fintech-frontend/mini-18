@@ -2,14 +2,18 @@
 
 import { useState } from "react";
 
-import { CATALOG_SEO } from "@/data/catalogData";
 import { cn } from "@/lib/utils";
+import type { CatalogCategory } from "@/types/productsTypes";
+
+type Props = {
+  seo: NonNullable<CatalogCategory["seo"]>;
+};
 
 /**
- * Sahifa pastidagi "Купить электроинструмент" matni.
+ * Kategoriya sahifasi pastidagi SEO matn (masalan, "Купить электроинструмент").
  * 360 / 768 da yig'ilgan holda, "Читать полностью" bilan ochiladi.
  */
-export default function CatalogSeoText() {
+export default function CatalogSeoText({ seo }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -18,7 +22,7 @@ export default function CatalogSeoText() {
         id="catalog-seo-title"
         className="text-[26px] leading-[1.2] font-bold text-[#303640] md:text-[28px] lg:text-[30px]"
       >
-        {CATALOG_SEO.title}
+        {seo.title}
       </h2>
 
       <div className="relative mt-3.5">
@@ -29,12 +33,12 @@ export default function CatalogSeoText() {
               "max-h-[540px] overflow-hidden md:max-h-[320px] lg:max-h-none",
           )}
         >
-          {CATALOG_SEO.paragraphs.map((text) => (
+          {seo.paragraphs.map((text) => (
             <p key={text}>{text}</p>
           ))}
 
           <ul className="space-y-3">
-            {CATALOG_SEO.list.map((item) => (
+            {seo.list.map((item) => (
               <li key={item.title} className="relative pl-4">
                 <span
                   aria-hidden

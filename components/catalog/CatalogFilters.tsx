@@ -3,20 +3,16 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
-import {
-  BRAND_OPTIONS,
-  COLOR_OPTIONS,
-  MATERIAL_OPTIONS,
-  PRICE_LIMIT,
-  TYPE_OPTIONS,
-  VISIBLE_FILTER_OPTIONS,
-} from "@/data/catalogData";
+import { VISIBLE_FILTER_OPTIONS } from "@/data/catalogData";
 import Checkbox from "@/components/ui/Checkbox";
 import { cn, formatPrice } from "@/lib/utils";
 import type {
   DimensionKey,
   FilterListKey,
+  FilterOption,
+  FilterOptions,
   FilterState,
+  PriceRange,
 } from "@/types/productsTypes";
 
 /* =========================
@@ -101,10 +97,12 @@ const thumbClasses =
 function PriceInputs({
   min,
   max,
+  limit,
   onChange,
 }: {
   min: number;
   max: number;
+  limit: PriceRange;
   onChange: (min: number, max: number) => void;
 }) {
   const [minText, setMinText] = useState(formatPrice(min));
@@ -113,14 +111,11 @@ function PriceInputs({
   const commit = () => {
     const minDigits = minText.replace(/\D/g, "");
     const maxDigits = maxText.replace(/\D/g, "");
-    const parsedMin = minDigits === "" ? PRICE_LIMIT.min : Number(minDigits);
-    const parsedMax = maxDigits === "" ? PRICE_LIMIT.max : Number(maxDigits);
+    const parsedMin = minDigits === "" ? limit.min : Number(minDigits);
+    const parsedMax = maxDigits === "" ? limit.max : Number(maxDigits);
 
-    const nextMax = Math.min(
-      Math.max(parsedMax, PRICE_LIMIT.min),
-      PRICE_LIMIT.max,
-    );
-    const nextMin = Math.min(Math.max(parsedMin, PRICE_LIMIT.min), nextMax);
+    const nextMax = Math.min(Math.max(parsedMax, limit.min), limit.max);
+    const nextMin = Math.min(Math.max(parsedMin, limit.min), nextMax);
 
     if (nextMin === min && nextMax === max) {
       setMinText(formatPrice(min));
@@ -154,15 +149,17 @@ function PriceInputs({
 function PriceFilter({
   min,
   max,
+  limit,
   onChange,
 }: {
   min: number;
   max: number;
+  limit: PriceRange;
   onChange: (min: number, max: number) => void;
 }) {
-  const range = PRICE_LIMIT.max - PRICE_LIMIT.min;
-  const left = ((min - PRICE_LIMIT.min) / range) * 100;
-  const right = 100 - ((max - PRICE_LIMIT.min) / range) * 100;
+  const range = Math.max(limit.max - limit.min, 1);
+  const left = ((min - limit.min) / range) * 100;
+  const right = 100 - ((max - limit.min) / range) * 100;
 
   return (
     <div>
@@ -171,6 +168,7 @@ function PriceFilter({
         key={`${min}-${max}`}
         min={min}
         max={max}
+        limit={limit}
         onChange={onChange}
       />
 
@@ -184,13 +182,13 @@ function PriceFilter({
         <input
           type="range"
           aria-label="Минимальная цена"
-          min={PRICE_LIMIT.min}
-          max={PRICE_LIMIT.max}
-          step={PRICE_LIMIT.step}
+          min={limit.min}
+          max={limit.max}
+          step={limit.step}
           value={min}
           onChange={(e) =>
             onChange(
-              Math.min(Number(e.target.value), max - PRICE_LIMIT.step),
+              Math.min(Number(e.target.value), max - limit.step),
               max,
             )
           }
@@ -199,14 +197,14 @@ function PriceFilter({
         <input
           type="range"
           aria-label="Максимальная цена"
-          min={PRICE_LIMIT.min}
-          max={PRICE_LIMIT.max}
-          step={PRICE_LIMIT.step}
+          min={limit.min}
+          max={limit.max}
+          step={limit.step}
           value={max}
           onChange={(e) =>
             onChange(
               min,
-              Math.max(Number(e.target.value), min + PRICE_LIMIT.step),
+              Math.max(Number(e.target.value), min + limit.step),
             )
           }
           className={cn(thumbClasses, "-mx-[9px] w-[calc(100%+18px)]")}
@@ -221,7 +219,7 @@ function CheckboxList({
   selected,
   onToggle,
 }: {
-  options: readonly string[];
+  options: FilterOption[];
   selected: string[];
   onToggle: (value: string) => void;
 }) {
@@ -234,7 +232,7 @@ function CheckboxList({
       ? options
       : options.filter(
           (item, index) =>
-            index < VISIBLE_FILTER_OPTIONS || selected.includes(item),
+            index < VISIBLE_FILTER_OPTIONS || selected.includes(item.value),
         );
 
   return (
@@ -242,12 +240,13 @@ function CheckboxList({
       <div className="space-y-2.5">
         {visible.map((item) => (
           <Checkbox
-            key={item}
-            checked={selected.includes(item)}
-            onChange={() => onToggle(item)}
+            key={item.value}
+            checked={selected.includes(item.value)}
+            onChange={() => onToggle(item.value)}
             className="py-[3px]"
           >
-            {item}
+            {item.value}{" "}
+            <span className="text-[#A0A5AC]">({item.count})</span>
           </Checkbox>
         ))}
       </div>
@@ -310,11 +309,26 @@ type SectionKey =
 
 type Props = {
   value: FilterState;
+  /** Joriy kategoriya mahsulotlaridan yig'ilgan variantlar */
+  options: FilterOptions;
   onChange: (next: FilterState) => void;
   className?: string;
 };
 
-export default function CatalogFilters({ value, onChange, className }: Props) {
+/** Bo'sh ro'yxatli bo'limlar (masalan, rangi yo'q kategoriya) ko'rsatilmaydi */
+const LIST_SECTIONS: { key: FilterListKey; section: SectionKey; title: string }[] = [
+  { key: "types", section: "type", title: "Тип товара" },
+  { key: "brands", section: "brand", title: "Бренд" },
+  { key: "materials", section: "material", title: "Материал" },
+  { key: "colors", section: "color", title: "Цвет" },
+];
+
+export default function CatalogFilters({
+  value,
+  options,
+  onChange,
+  className,
+}: Props) {
   const [sections, setSections] = useState<Record<SectionKey, boolean>>({
     price: true,
     type: true,
@@ -352,59 +366,29 @@ export default function CatalogFilters({ value, onChange, className }: Props) {
         <PriceFilter
           min={value.minPrice}
           max={value.maxPrice}
+          limit={options.price}
           onChange={(minPrice, maxPrice) =>
             onChange({ ...value, minPrice, maxPrice })
           }
         />
       </FilterSection>
 
-      <FilterSection
-        title="Тип товара"
-        open={sections.type}
-        onToggle={() => toggleSection("type")}
-      >
-        <CheckboxList
-          options={TYPE_OPTIONS}
-          selected={value.types}
-          onToggle={(item) => toggleListValue("types", item)}
-        />
-      </FilterSection>
-
-      <FilterSection
-        title="Бренд"
-        open={sections.brand}
-        onToggle={() => toggleSection("brand")}
-      >
-        <CheckboxList
-          options={BRAND_OPTIONS}
-          selected={value.brands}
-          onToggle={(item) => toggleListValue("brands", item)}
-        />
-      </FilterSection>
-
-      <FilterSection
-        title="Материал"
-        open={sections.material}
-        onToggle={() => toggleSection("material")}
-      >
-        <CheckboxList
-          options={MATERIAL_OPTIONS}
-          selected={value.materials}
-          onToggle={(item) => toggleListValue("materials", item)}
-        />
-      </FilterSection>
-
-      <FilterSection
-        title="Цвет"
-        open={sections.color}
-        onToggle={() => toggleSection("color")}
-      >
-        <CheckboxList
-          options={COLOR_OPTIONS}
-          selected={value.colors}
-          onToggle={(item) => toggleListValue("colors", item)}
-        />
-      </FilterSection>
+      {LIST_SECTIONS.map(({ key, section, title }) =>
+        options[key].length === 0 ? null : (
+          <FilterSection
+            key={key}
+            title={title}
+            open={sections[section]}
+            onToggle={() => toggleSection(section)}
+          >
+            <CheckboxList
+              options={options[key]}
+              selected={value[key]}
+              onToggle={(item) => toggleListValue(key, item)}
+            />
+          </FilterSection>
+        ),
+      )}
 
       <FilterSection
         title="Длина, мм"
