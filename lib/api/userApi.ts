@@ -5,15 +5,15 @@ import { baseQueryWithReauth } from "./baseQuery";
    ENDPOINT YO'LLARI
    Swagger (/api/docs/) bilan solishtiring. Faqat SHU YERDA
    o'zgartirsangiz yetadi.
-   Tasdiqlangan (Swagger): logout, profile, changePassword, addresses
-   Taxminiy:               orders, favorites
+   Tasdiqlangan (Swagger): logout, profile, changePassword, addresses, orders
+   Taxminiy:               favorites
 ========================================================= */
 export const ENDPOINTS = {
   logout: "/auth/logout/",
   profile: "/auth/profile/",
   changePassword: "/auth/password/change/",
   addresses: "/auth/addresses/",
-  orders: "/orders/", // <-- taxminiy
+  orders: "/orders/",
   favorites: "/favorites/", // <-- taxminiy
 };
 
@@ -47,6 +47,13 @@ export interface ChangePasswordRequest {
   password_confirm: string;
 }
 
+export interface CreateOrderRequest {
+  number: string;
+  status: string;
+  subtotal: string;
+  total: string;
+}
+
 /* =========================
    API
 ========================= */
@@ -54,7 +61,7 @@ export interface ChangePasswordRequest {
 export const userApi = createApi({
   reducerPath: "userApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Profile", "Addresses", "Favorites"],
+  tagTypes: ["Profile", "Addresses", "Favorites", "Orders"],
   endpoints: (builder) => ({
     logout: builder.mutation<unknown, { refresh: string }>({
       query: (body) => ({ url: ENDPOINTS.logout, method: "POST", body }),
@@ -106,6 +113,13 @@ export const userApi = createApi({
     getOrders: builder.query<AnyRecord[], void>({
       query: () => ENDPOINTS.orders,
       transformResponse: (res: unknown) => toList(res),
+      providesTags: ["Orders"],
+    }),
+
+    // Swagger: POST /api/orders/ — faqat number, status, subtotal, total qabul qilinadi
+    createOrder: builder.mutation<AnyRecord, CreateOrderRequest>({
+      query: (body) => ({ url: ENDPOINTS.orders, method: "POST", body }),
+      invalidatesTags: ["Orders"],
     }),
 
     /* ---------- SEVIMLILAR ---------- */
@@ -143,6 +157,7 @@ export const {
   useUpdateAddressMutation,
   useDeleteAddressMutation,
   useGetOrdersQuery,
+  useCreateOrderMutation,
   useGetFavoritesQuery,
   useRemoveFavoriteMutation,
 } = userApi;

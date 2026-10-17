@@ -12,21 +12,16 @@ import {
 import type { AnyRecord } from "@/lib/api/userApi";
 import { formatApiError } from "@/lib/apiError";
 
-/* =========================================================
-   MANZIL MAYDONLARI
-   Swagger'dagi POST /api/users/addresses/ body'iga moslang.
-   Server "kalit: This field is required" desa, shu yerga
-   o'sha kalitni qo'shing.
-========================================================= */
+/* Swagger: POST /api/auth/addresses/ — company_name, street, house, phone.
+   region va city — son (ID), lekin ularni olish uchun endpoint yo'q, shuning uchun yuborilmaydi. */
 const ADDRESS_FIELDS = [
-  { key: "title", label: "Название (Дом, Офис)" },
-  { key: "city", label: "Город" },
+  { key: "company_name", label: "Название (Дом, Офис, Компания)" },
   { key: "street", label: "Улица" },
   { key: "house", label: "Дом" },
-  { key: "apartment", label: "Квартира" },
+  { key: "phone", label: "Телефон" },
 ];
 
-const HIDDEN_KEYS = ["id", "user", "created_at", "updated_at", "is_default"];
+const HIDDEN_KEYS = ["id", "user", "created_at", "updated_at", "is_default", "region", "city"];
 
 const inputClass =
   "h-11 w-full rounded-md border border-gray-200 bg-white px-4 text-sm text-slate-800 outline-none transition placeholder:text-gray-300 focus:border-[#005bff]";
@@ -77,11 +72,22 @@ export default function AddressSection() {
     e.preventDefault();
     setMessage(null);
 
+    // Bo'sh maydonlar yuborilmaydi (server "may not be blank" deb 400 qaytaradi)
+    const body = Object.fromEntries(
+      Object.entries(values)
+        .map(([k, v]) => [k, v.trim()])
+        .filter(([, v]) => v !== "")
+    );
+    if (Object.keys(body).length === 0) {
+      setMessage("Заполните хотя бы одно поле");
+      return;
+    }
+
     try {
       if (editingId !== null) {
-        await updateAddress({ id: editingId, body: values }).unwrap();
+        await updateAddress({ id: editingId, body }).unwrap();
       } else {
-        await addAddress(values).unwrap();
+        await addAddress(body).unwrap();
       }
       setShowForm(false);
       setValues({});
@@ -124,34 +130,36 @@ export default function AddressSection() {
       {showForm && (
         <form
           onSubmit={onSubmit}
-          className="mb-6 max-w-xl space-y-4 rounded-lg border border-gray-100 p-4"
+          className="mb-6 rounded-lg border border-gray-100 p-4 md:p-5"
         >
-          {ADDRESS_FIELDS.map(({ key, label }) => (
-            <div key={key}>
-              <label
-                htmlFor={`addr-${key}`}
-                className="mb-2 block text-xs font-medium text-slate-700"
-              >
-                {label}
-              </label>
-              <input
-                id={`addr-${key}`}
-                value={values[key] ?? ""}
-                onChange={(e) =>
-                  setValues((prev) => ({ ...prev, [key]: e.target.value }))
-                }
-                className={inputClass}
-              />
-            </div>
-          ))}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {ADDRESS_FIELDS.map(({ key, label }) => (
+              <div key={key}>
+                <label
+                  htmlFor={`addr-${key}`}
+                  className="mb-2 block text-xs font-medium text-slate-700"
+                >
+                  {label}
+                </label>
+                <input
+                  id={`addr-${key}`}
+                  value={values[key] ?? ""}
+                  onChange={(e) =>
+                    setValues((prev) => ({ ...prev, [key]: e.target.value }))
+                  }
+                  className={inputClass}
+                />
+              </div>
+            ))}
+          </div>
 
           {message && (
-            <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+            <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
               {message}
             </p>
           )}
 
-          <div className="flex gap-3">
+          <div className="mt-5 flex gap-3">
             <button
               type="submit"
               disabled={adding || updating}

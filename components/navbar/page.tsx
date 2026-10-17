@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/lib/store';
@@ -15,6 +15,9 @@ import {
   X 
 } from 'lucide-react';
 import { styles } from '@/styles/index.styles';
+import { useCart } from '@/context/CartContext';
+import { useFavorites } from '@/context/FavoritesContext';
+import CartDrawer from '@/components/cart/CartDrawer';
 
 const navItems = [
   { label: 'О компании', uppercaseLabel: 'О КОМПАНИИ', href: '/Ocompany' },
@@ -46,9 +49,12 @@ export default function Header() {
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Dinamik sanoqlar
-  const [cartCount] = useState(0); 
-  const [favoritesCount] = useState(0);
+  // Dinamik sanoqlar (savatcha — umumiy dona soni, sevimlilar — mahsulotlar soni)
+  const { totalCount: cartCount } = useCart();
+  const { favorites } = useFavorites();
+  const favoritesCount = favorites.length;
+  const closeCart = useCallback(() => setIsCartOpen(false), []);
+  const badge = (n: number) => (n > 99 ? '99+' : n);
 
   return (
     <header className="  w-full bg-white border-b border-gray-100 font-sans sticky top-0 z-40 select-none">
@@ -154,8 +160,8 @@ export default function Header() {
               <div className="relative">
                 <Heart className="w-5 h-5 stroke-[1.5] group-hover:scale-105 transition-transform" />
                 {favoritesCount > 0 && (
-                  <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                    {favoritesCount}
+                  <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold min-w-3.5 h-3.5 px-0.5 rounded-full flex items-center justify-center">
+                    {badge(favoritesCount)}
                   </span>
                 )}
               </div>
@@ -170,8 +176,8 @@ export default function Header() {
               <div className="relative">
                 <ShoppingCart className="w-5 h-5 stroke-[1.5] group-hover:scale-105 transition-transform" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                    {cartCount}
+                  <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold min-w-3.5 h-3.5 px-0.5 rounded-full flex items-center justify-center">
+                    {badge(cartCount)}
                   </span>
                 )}
               </div>
@@ -190,8 +196,8 @@ export default function Header() {
             <Link href="/favorites" className="p-1 hover:text-[#2563EB] relative">
               <Heart className="w-5 h-5 stroke-[1.8]" />
               {favoritesCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-[#D93829] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {favoritesCount}
+                <span className="absolute -top-1.5 -right-1.5 bg-[#D93829] text-white text-[9px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                  {badge(favoritesCount)}
                 </span>
               )}
             </Link>
@@ -202,8 +208,8 @@ export default function Header() {
             >
               <ShoppingCart className="w-5 h-5 stroke-[1.8]" />
               {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-[#D93829] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {cartCount}
+                <span className="absolute -top-1.5 -right-1.5 bg-[#D93829] text-white text-[9px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                  {badge(cartCount)}
                 </span>
               )}
             </button>
@@ -289,8 +295,8 @@ export default function Header() {
             <div className="relative">
               <Heart className="w-6 h-6 stroke-[1.5] group-hover:scale-105 transition-transform" />
               {favoritesCount > 0 && (
-                <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {favoritesCount}
+                <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                  {badge(favoritesCount)}
                 </span>
               )}
             </div>
@@ -305,8 +311,8 @@ export default function Header() {
             <div className="relative">
               <ShoppingCart className="w-6 h-6 stroke-[1.5] group-hover:scale-105 transition-transform" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {cartCount}
+                <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                  {badge(cartCount)}
                 </span>
               )}
             </div>
@@ -316,8 +322,8 @@ export default function Header() {
 
       </div>
 
-      {/* Cart Discount Modal */}
-    
+      {/* Savatcha */}
+      <CartDrawer open={isCartOpen} onClose={closeCart} />
 
       {/* Mobile/Tablet Sidebar Menu */}
       {isMobileMenuOpen && (

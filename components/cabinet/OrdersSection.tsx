@@ -1,10 +1,15 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { Fragment, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { ChevronRight, MapPin } from "lucide-react";
 
 import { useGetOrdersQuery } from "@/lib/api/userApi";
 import type { AnyRecord } from "@/lib/api/userApi";
 import { formatApiError } from "@/lib/apiError";
+import { getOrderDetails } from "@/lib/orderHistory";
+import type { OrderDetails } from "@/lib/orderHistory";
 
 const pick = (obj: AnyRecord, keys: string[]): string => {
   for (const key of keys) {
@@ -31,6 +36,23 @@ function formatTotal(value: string): string {
   return Number.isNaN(n) ? value : `${n.toLocaleString("ru-RU")} ₽`;
 }
 
+const rub = (n: number) => `${n.toLocaleString("ru-RU")} ₽`;
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Ожидает",
+  new: "Новый",
+  processing: "В обработке",
+  confirmed: "Подтверждён",
+  paid: "Оплачен",
+  shipped: "Отправлен",
+  delivered: "Доставлен",
+  completed: "Выполнен",
+  cancelled: "Отменён",
+  canceled: "Отменён",
+};
+
+const statusLabel = (status: string) => STATUS_LABELS[status.toLowerCase()] ?? status;
+
 function statusClass(status: string): string {
   const s = status.toLowerCase();
   if (/cancel|отмен|reject/.test(s))
@@ -40,8 +62,134 @@ function statusClass(status: string): string {
   return "text-orange-600 bg-orange-50 border-orange-200";
 }
 
+const sectionTitle = "mb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400";
+
+/* Buyurtma tarkibi — qator ostida ochiladi */
+function OrderDetailsPanel({
+  details,
+  subtotal,
+  total,
+}: {
+  details: OrderDetails | null;
+  subtotal: string;
+  total: string;
+}) {
+  if (!details) {
+    return (
+      <div className="space-y-2 text-xs text-gray-500">
+        <p>
+          Состав заказа недоступен: сервер не хранит список товаров, а этот заказ был
+          оформлен на другом устройстве или до обновления сайта.
+        </p>
+        <p>
+          Сумма: <b className="text-gray-800">{formatTotal(subtotal) || "—"}</b> · Итого:{" "}
+          <b className="text-gray-800">{formatTotal(total) || "—"}</b>
+        </p>
+      </div>
+    );
+  }
+
+  const { customer } = details;
+  const fullName = [customer.firstName, customer.lastName].filter(Boolean).join(" ");
+  const itemsCount = details.items.reduce((sum, i) => sum + i.quantity, 0);
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
+      {/* Mahsulotlar */}
+      <div>
+        <p className={`${sectionTitle} mb-3`}>Товары ({itemsCount} шт.)</p>
+        <ul className="divide-y divide-gray-100 rounded-lg border border-gray-100 bg-white">
+          {details.items.map((item) => (
+            <li key={item.id} className="flex items-center gap-3 px-3 py-3">
+              <Link
+                href={`/products/${item.slug ?? item.id}`}
+                className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-gray-50"
+              >
+                <Image
+                  src={item.imageUrl}
+                  alt={item.title}
+                  fill
+                  className="object-contain p-1"
+                  sizes="48px"
+                />
+              </Link>
+              <div className="min-w-0 flex-1">
+                <Link
+                  href={`/products/${item.slug ?? item.id}`}
+                  className="line-clamp-2 text-xs text-gray-800 hover:text-[#005bff] sm:text-sm"
+                >
+                  {item.title}
+                </Link>
+                <p className="mt-0.5 text-[11px] text-gray-400">
+                  Артикул: {item.article} · {rub(item.price)} × {item.quantity}
+                </p>
+              </div>
+              <span className="shrink-0 whitespace-nowrap text-sm font-semibold text-slate-900">
+                {rub(item.price * item.quantity)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Yetkazish, to'lov, qabul qiluvchi, summa */}
+      <div className="space-y-4 text-xs text-gray-600">
+        <div>
+          <p className={sectionTitle}>Доставка</p>
+          <p className="text-gray-800">{details.delivery}</p>
+          <p>{[details.region, details.city].filter(Boolean).join(", ")}</p>
+          {details.deliveryAddress && (
+            <p className="mt-1 flex items-start gap-1">
+              <MapPin size={12} className="mt-0.5 shrink-0 text-gray-400" />
+              {details.deliveryAddress}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <p className={sectionTitle}>Оплата</p>
+          <p className="text-gray-800">{details.payment}</p>
+        </div>
+
+        <div>
+          <p className={sectionTitle}>Получатель</p>
+          {fullName && <p className="text-gray-800">{fullName}</p>}
+          {customer.company && <p>{customer.company}</p>}
+          {customer.phone && <p>{customer.phone}</p>}
+          {customer.email && <p>{customer.email}</p>}
+        </div>
+
+        {details.comment && (
+          <div>
+            <p className={sectionTitle}>Комментарий</p>
+            <p className="whitespace-pre-line">{details.comment}</p>
+          </div>
+        )}
+
+        <dl className="space-y-1 border-t border-gray-200 pt-3">
+          <div className="flex justify-between">
+            <dt>Сумма</dt>
+            <dd className="text-gray-800">{rub(details.subtotal)}</dd>
+          </div>
+          {details.discount > 0 && (
+            <div className="flex justify-between">
+              <dt>Скидка{details.promoCode ? ` (${details.promoCode})` : ""}</dt>
+              <dd className="text-green-600">−{rub(details.discount)}</dd>
+            </div>
+          )}
+          <div className="flex justify-between text-sm font-bold text-slate-900">
+            <dt>Итого</dt>
+            <dd>{rub(details.total)}</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  );
+}
+
 export default function OrdersSection() {
   const { data: orders = [], isLoading, error } = useGetOrdersQuery();
+  const [openKey, setOpenKey] = useState<string | null>(null);
 
   return (
     <div className="bg-white p-5 md:p-6 rounded-xl border border-gray-100 shadow-sm">
@@ -76,6 +224,7 @@ export default function OrdersSection() {
                 const number = pick(order, ["number", "order_number", "id"]);
                 const date = pick(order, ["created_at", "date", "created"]);
                 const status = pick(order, ["status_display", "status"]);
+                const subtotal = pick(order, ["subtotal"]);
                 const total = pick(order, [
                   "total_price",
                   "total",
@@ -83,30 +232,69 @@ export default function OrdersSection() {
                   "amount",
                 ]);
 
+                const rowKey = String(order.id ?? idx);
+                const isOpen = openKey === rowKey;
+                const toggle = () => setOpenKey(isOpen ? null : rowKey);
+
                 return (
-                  <tr key={String(order.id ?? idx)} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="py-4 font-semibold text-gray-800">
-                      {number ? `#${number}` : "—"}
-                    </td>
-                    <td className="py-4 text-gray-500">{formatDate(date)}</td>
-                    <td className="py-4">
-                      {status && (
-                        <span
-                          className={`inline-block px-2.5 py-1 text-[10px] font-extrabold uppercase border rounded ${statusClass(status)}`}
+                  <Fragment key={rowKey}>
+                    <tr
+                      onClick={toggle}
+                      className={`cursor-pointer transition-colors ${
+                        isOpen ? "bg-gray-50" : "hover:bg-gray-50/50"
+                      }`}
+                    >
+                      <td className="py-4 pl-2 font-semibold text-gray-800">
+                        {number ? `#${number}` : "—"}
+                      </td>
+                      <td className="py-4 text-gray-500">{formatDate(date)}</td>
+                      <td className="py-4">
+                        {status && (
+                          <span
+                            className={`inline-block px-2.5 py-1 text-[10px] font-extrabold uppercase border rounded ${statusClass(status)}`}
+                          >
+                            • {statusLabel(status)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-4 font-bold text-slate-900 text-right">
+                        {formatTotal(total)}
+                      </td>
+                      <td className="py-4 pr-2 text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggle();
+                          }}
+                          aria-expanded={isOpen}
+                          aria-label={isOpen ? "Скрыть состав заказа" : "Показать состав заказа"}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            isOpen
+                              ? "bg-blue-50 text-[#005bff]"
+                              : "bg-gray-100 text-gray-400 hover:text-[#005bff] hover:bg-blue-50"
+                          }`}
                         >
-                          • {status}
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-4 font-bold text-slate-900 text-right">
-                      {formatTotal(total)}
-                    </td>
-                    <td className="py-4 text-right">
-                      <button className="p-1.5 bg-gray-100 text-gray-400 hover:text-[#005bff] hover:bg-blue-50 rounded-lg transition-colors">
-                        <ChevronRight size={16} />
-                      </button>
-                    </td>
-                  </tr>
+                          <ChevronRight
+                            size={16}
+                            className={`transition-transform ${isOpen ? "rotate-90" : ""}`}
+                          />
+                        </button>
+                      </td>
+                    </tr>
+
+                    {isOpen && (
+                      <tr className="bg-gray-50">
+                        <td colSpan={5} className="px-4 pb-5 pt-1">
+                          <OrderDetailsPanel
+                            details={number ? getOrderDetails(number) : null}
+                            subtotal={subtotal}
+                            total={total}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 );
               })}
             </tbody>
