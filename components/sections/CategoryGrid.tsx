@@ -18,16 +18,13 @@ const fallbackCategories = [
 export const CategoryGrid = () => {
   const { data, isLoading, isError } = useGetCategoriesQuery();
 
-  const activeCategories =
-    !isLoading && !isError && Array.isArray(data)
-      ? data
+  const categories =
+    !isLoading && !isError && data && data.results.length > 0
+      ? data.results
           .filter((c) => c.is_active)
           .slice(0, 7)
           .map((c) => ({ name: c.name, slug: c.slug }))
-      : [];
-
-  const categories =
-    activeCategories.length > 0 ? activeCategories : fallbackCategories;
+      : fallbackCategories;
 
   return (
     <section className="py-6 sm:py-8">

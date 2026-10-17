@@ -18,8 +18,8 @@ export const BrandsCarousel = () => {
   const { data, isLoading, isError } = useGetBrandsQuery();
 
   const brands =
-    !isLoading && !isError && Array.isArray(data) && data.length > 0
-      ? data.map((b) => ({ name: b.name, slug: b.slug, logo: b.logo }))
+    !isLoading && !isError && data && data.results.length > 0
+      ? data.results.map((b) => ({ name: b.name, slug: b.slug, logo: b.logo }))
       : fallbackBrands;
 
   return (
