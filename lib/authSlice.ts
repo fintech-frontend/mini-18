@@ -3,9 +3,11 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 interface AuthState {
   token: string | null; // access
   refresh: string | null;
+  // localStorage'dan o'qib bo'lindimi (undan oldin token null bo'lishi "kirmagan" degani emas)
+  hydrated: boolean;
 }
 
-const initialState: AuthState = { token: null, refresh: null };
+const initialState: AuthState = { token: null, refresh: null, hydrated: false };
 
 const authSlice = createSlice({
   name: "auth",
@@ -52,6 +54,7 @@ const authSlice = createSlice({
     },
 
     hydrate(state) {
+      state.hydrated = true;
       state.token =
         localStorage.getItem("token") ?? sessionStorage.getItem("token");
       state.refresh =

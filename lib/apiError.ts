@@ -42,13 +42,30 @@ const TRANSLATIONS: Record<string, string> = {
   "Not found.": "Не найдено.",
   "This field is required.": "Обязательное поле.",
   "This field may not be blank.": "Поле не может быть пустым.",
+  "Enter a valid phone number, for example +998901234567.":
+    "Введите корректный номер телефона, например +998 (90) 123-45-67.",
+  "Enter a valid email address.": "Введите корректный email.",
+};
+
+// Maydon nomlari xabarda ruscha ko'rinadi ("phone: ..." → "Телефон: ...")
+const FIELD_LABELS: Record<string, string> = {
+  phone: "Телефон",
+  email: "Email",
+  password: "Пароль",
+  first_name: "Имя",
+  last_name: "Фамилия",
+  street: "Улица",
+  house: "Дом",
+  company_name: "Название",
+  region: "Регион",
+  city: "Город",
 };
 
 function flatten(value: unknown, key = ""): string[] {
   if (typeof value === "string" || typeof value === "number") {
     if (value === "") return [];
     const text = TRANSLATIONS[String(value)] ?? String(value);
-    return [!key || PLAIN_KEYS.includes(key) ? text : `${key}: ${text}`];
+    return [!key || PLAIN_KEYS.includes(key) ? text : `${FIELD_LABELS[key] ?? key}: ${text}`];
   }
   if (Array.isArray(value)) return value.flatMap((v) => flatten(v, key));
   if (value && typeof value === "object") {

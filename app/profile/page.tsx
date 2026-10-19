@@ -1,6 +1,8 @@
 "use client";
 
-import React, { FormEvent, useEffect, useState, useSyncExternalStore } from "react";
+import React, { FormEvent, useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/lib/store";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -20,6 +22,7 @@ import {
 import type { Profile } from "@/lib/api/userApi";
 import { useLogout } from "@/lib/hooks/useLogout";
 import { formatApiError } from "@/lib/apiError";
+import { normalizePhone } from "@/lib/phone";
 import AddressSection from "@/components/cabinet/AddressSection";
 import OrdersSection from "@/components/cabinet/OrdersSection";
 import FavoritesSection from "@/components/cabinet/FavoritesSection";
@@ -110,7 +113,10 @@ function EditProfileSection({ profile }: { profile?: Profile }) {
     setMessage(null);
 
     try {
-      await updateProfile(values).unwrap();
+      // Telefon serverga faqat "+" va raqamlar bilan ketadi
+      const body = { ...values };
+      for (const k of ["phone", "phone_number"]) if (body[k]) body[k] = normalizePhone(body[k]);
+      await updateProfile(body).unwrap();
       setMessage({ type: "ok", text: "Профиль успешно обновлён" });
     } catch (err) {
       setMessage({ type: "err", text: formatApiError(err) });
@@ -283,16 +289,14 @@ export default function ProfilePage() {
   const { logoutUser, isLoading: isLoggingOut } = useLogout();
 
   const [activeTab, setActiveTab] = useState<string>("account");
-  const authChecked = useSyncExternalStore(
-    () => () => {},
-    () => !!(localStorage.getItem("token") ?? sessionStorage.getItem("token")),
-    () => false
-  );
+  // Redux'dagi token: server tokenni rad etib sessiya tozalansa ham darhol bilinadi
+  const { token, hydrated } = useSelector((state: RootState) => state.auth);
+  const authChecked = hydrated && !!token;
 
-  // Token yo'q bo'lsa -> /login
+  // Token yo'q (yoki muddati tugab o'chirilgan) bo'lsa -> /login
   useEffect(() => {
-    if (!authChecked) router.replace("/login");
-  }, [authChecked, router]);
+    if (hydrated && !token) router.replace("/login?expired=1");
+  }, [hydrated, token, router]);
 
   const {
     data: profile,

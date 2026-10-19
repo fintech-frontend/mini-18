@@ -11,8 +11,12 @@ export interface ApiPromotion {
   description?: string | null;
   full_description?: string | null;
   discount?: string | number | null;
+  /** Hozirgi backend formati */
+  discount_value?: string | number | null;
   image?: string | null;
+  start_date?: string | null;
   end_date?: string | null;
+  is_active?: boolean;
   promo_code?: string | null;
 }
 
@@ -64,7 +68,7 @@ export const mapPromotion = (p: ApiPromotion): Action => ({
   title: p.title,
   description: p.description ?? "",
   fullDescription: p.full_description ?? p.description ?? "",
-  discount: formatDiscount(p.discount),
+  discount: formatDiscount(p.discount ?? p.discount_value),
   image: toImageUrl(p.image),
   endDate: formatDate(p.end_date),
   promoCode: p.promo_code ?? "",
@@ -81,10 +85,12 @@ export const promotionsApi = createApi({
         params: { page: arg?.page ?? 1 },
       }),
       transformResponse: (res: Paginated<ApiPromotion> | ApiPromotion[]) => {
+        // Admin'da o'chirilgan aksiyalar saytda ko'rinmaydi
+        const visible = (list: ApiPromotion[]) => list.filter((p) => p.is_active !== false);
         if (Array.isArray(res)) {
-          return { items: res.map(mapPromotion), count: res.length };
+          return { items: visible(res).map(mapPromotion), count: visible(res).length };
         }
-        return { items: res.results.map(mapPromotion), count: res.count };
+        return { items: visible(res.results).map(mapPromotion), count: res.count };
       },
       providesTags: ["Promotion"],
     }),

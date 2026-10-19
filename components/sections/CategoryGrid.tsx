@@ -22,6 +22,7 @@ export const CategoryGrid = () => {
     !isLoading && !isError && data && data.results.length > 0
       ? data.results
           .filter((c) => c.is_active)
+          .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name))
           .slice(0, 7)
           .map((c) => ({ name: c.name, slug: c.slug }))
       : fallbackCategories;

@@ -6,7 +6,7 @@ import iconOplata from "../../assets/iconOplata.png";
 import iconTovar from "../../assets/iconTovar.png";
 import iconBox from "../../assets/iconBox.png";
 import iconDelaem from "../../assets/iconDelaem.png";
-import { news } from "@/components/constans/news";
+import LatestNewsGrid from "@/components/news/LatestNewsGrid";
 
 export default function OCompny() {
     return (
@@ -398,57 +398,8 @@ export default function OCompny() {
 
                 {/* ================= NEWS ================= */}
                 <section className="py-12 sm:py-16 lg:py-20">
-
-                    <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-
-                        <h2 className="text-3xl font-bold text-[#2F3640] sm:text-4xl lg:text-[42px]">
-                            Последние новости
-                        </h2>
-
-                        <button className="w-fit rounded-md bg-[#F5F8FD] px-6 py-3 text-sm font-medium text-[#1D73E8] transition hover:bg-[#EAF2FF]">
-                            Больше новостей
-                        </button>
-
-                    </div>
-
-
-                    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-4">
-
-                        {news.map((item) => (
-                            <div
-                                key={item.id}
-                                className="group cursor-pointer"
-                            >
-
-                                <div className="overflow-hidden rounded-xl">
-
-                                    <Image
-                                        src={item.image}
-                                        alt={item.title}
-                                        width={400}
-                                        height={220}
-                                        className="h-55 w-full rounded-xl object-cover transition duration-500 group-hover:scale-105"
-                                    />
-
-                                </div>
-
-                                <h3 className="mt-5 text-lg font-semibold leading-7 text-[#2F3640] transition group-hover:text-[#1D73E8] sm:text-[22px]">
-                                    {item.title}
-                                </h3>
-
-                                <p className="mt-4 text-sm leading-7 text-[#7B8794] sm:text-[15px]">
-                                    {item.text}
-                                </p>
-
-                                <p className="mt-4 text-sm text-[#9CA3AF]">
-                                    {item.date}
-                                </p>
-
-                            </div>
-                        ))}
-
-                    </div>
-
+                    {/* Yangiliklar API'dan (/api/news/) */}
+                    <LatestNewsGrid variant="large" />
                 </section>
 
             </div>

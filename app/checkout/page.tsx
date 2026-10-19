@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSelector } from "react-redux";
@@ -13,6 +13,7 @@ import { useCreateOrderMutation, useGetProfileQuery } from "@/lib/api/userApi";
 import { useGetPromotionsQuery } from "@/lib/api/promotionsApi";
 import { formatApiError } from "@/lib/apiError";
 import { saveOrderDetails } from "@/lib/orderHistory";
+import { formatPhone, isPhoneComplete } from "@/lib/phone";
 
 /* Hudud/shahar uchun API endpoint yo'q — vaqtincha statik ro'yxat */
 const REGIONS: Record<string, string[]> = {
@@ -58,45 +59,8 @@ const labelClass = "mb-2 block text-xs text-slate-700";
 
 const formatPrice = (value: number) => `${value.toLocaleString("ru-RU")} ₽`;
 
-/* Telefon niqobi:
-   Rossiya    — "+7 (999) 123-45-67"   (+, 7, 8 yoki raqamdan boshlansa)
-   O'zbekiston — "+998 (90) 123-45-67" ("+998" yoki "998" bilan boshlansa)
-   Boshqa      — "+" va 15 tagacha raqam ("+" va 7 dan boshqa raqam bilan) */
-function formatPhone(raw: string): string {
-  const value = raw.trim();
-  if (value === "+") return "+";
-  let d = value.replace(/\D/g, "");
-
-  if (d.startsWith("998")) {
-    d = d.slice(3, 12);
-    let out = "+998";
-    if (d.length > 0) out += " (" + d.slice(0, 2);
-    if (d.length > 2) out += ") " + d.slice(2, 5);
-    if (d.length > 5) out += "-" + d.slice(5, 7);
-    if (d.length > 7) out += "-" + d.slice(7, 9);
-    return out;
-  }
-  if (value.startsWith("+") && !d.startsWith("7")) {
-    return "+" + d.slice(0, 15);
-  }
-
-  if (d.startsWith("7") || d.startsWith("8")) d = d.slice(1);
-  d = d.slice(0, 10);
-  if (!d) return "";
-  let out = "+7 (" + d.slice(0, 3);
-  if (d.length > 3) out += ") " + d.slice(3, 6);
-  if (d.length > 6) out += "-" + d.slice(6, 8);
-  if (d.length > 8) out += "-" + d.slice(8, 10);
-  return out;
-}
-
-// To'liq kiritilganmi: +7 — 11 raqam, +998 — 12 raqam, boshqalari — 10–15 raqam
-function isPhoneComplete(phone: string): boolean {
-  const d = phone.replace(/\D/g, "");
-  if (phone.startsWith("+998")) return d.length === 12;
-  if (phone.startsWith("+7")) return d.length === 11;
-  return d.length >= 10 && d.length <= 15;
-}
+// Buyurtma raqami: vaqt belgisining oxirgi 8 raqami
+const newOrderNumber = () => String(Date.now()).slice(-8);
 
 const PHONE_ERROR =
   "Номер телефона введён не полностью. Пример: +7 (999) 123-45-67 или +998 (90) 123-45-67";
@@ -151,6 +115,7 @@ export default function CheckoutPage() {
   // Kirgan foydalanuvchi ma'lumotlarini oldindan to'ldirish
   useEffect(() => {
     if (!profile) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm((prev) => ({
       ...prev,
       firstName: prev.firstName || asText(profile.first_name),
@@ -184,7 +149,7 @@ export default function CheckoutPage() {
     setPromo({ code: found.promoCode, percent });
   };
 
-  const onSubmit = async (e: FormEvent) => {
+  const onSubmit = async (e: React.ChangeEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
@@ -202,7 +167,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    const number = String(Date.now()).slice(-8);
+    const number = newOrderNumber();
 
     try {
       await createOrder({
@@ -626,10 +591,10 @@ export default function CheckoutPage() {
             </div>
 
             {/* ================= RIGHT: Ваш заказ ================= */}
-            <aside className="w-full shrink-0 rounded-xl border border-gray-100 p-5 shadow-sm sm:p-6 lg:sticky lg:top-40 lg:w-[350px]">
+            <aside className="w-full shrink-0 rounded-xl border border-gray-100 p-5 shadow-sm sm:p-6 lg:sticky lg:top-40 lg:w-87.5">
               <h2 className="mb-5 text-xl font-medium text-gray-900">Ваш заказ</h2>
 
-              <ul className="mb-5 max-h-[420px] space-y-4 overflow-y-auto pr-1">
+              <ul className="mb-5 max-h-105 space-y-4 overflow-y-auto pr-1">
                 {cartItems.map((item) => (
                   <li key={item.id} className="flex items-center gap-3">
                     <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md bg-gray-50">

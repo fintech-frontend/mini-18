@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { MapPin, Pencil, Trash2 } from "lucide-react";
+import { MapPin, Pencil, Star, Trash2 } from "lucide-react";
 
 import {
   useAddAddressMutation,
@@ -9,34 +9,30 @@ import {
   useGetAddressesQuery,
   useUpdateAddressMutation,
 } from "@/lib/api/userApi";
-import type { AnyRecord } from "@/lib/api/userApi";
+import type { AddressBody, AnyRecord } from "@/lib/api/userApi";
 import { formatApiError } from "@/lib/apiError";
+import { formatPhone, isPhoneComplete, normalizePhone, phoneIncompleteMessage } from "@/lib/phone";
 
-/* Swagger: POST /api/auth/addresses/ — company_name, street, house, phone.
-   region va city — son (ID), lekin ularni olish uchun endpoint yo'q, shuning uchun yuborilmaydi. */
+/* Swagger (Address): company_name, street, house, phone, is_default — shu yerda to'ldiriladi.
+   region va city — son (ID), lekin ularni olish uchun API'da endpoint yo'q, shuning uchun yuborilmaydi. */
 const ADDRESS_FIELDS = [
-  { key: "company_name", label: "Название (Дом, Офис, Компания)" },
-  { key: "street", label: "Улица" },
-  { key: "house", label: "Дом" },
-  { key: "phone", label: "Телефон" },
-];
+  { key: "company_name", label: "Название (Дом, Офис, Компания)", placeholder: "Дом", max: 255 },
+  { key: "street", label: "Улица", placeholder: "ул. Октябрьская", max: 255 },
+  { key: "house", label: "Дом / квартира", placeholder: "301, кв. 12", max: 100 },
+  { key: "phone", label: "Телефон", placeholder: "+7 (___) ___-__-__", max: 20 },
+] as const;
 
-const HIDDEN_KEYS = ["id", "user", "created_at", "updated_at", "is_default", "region", "city"];
+type FieldKey = (typeof ADDRESS_FIELDS)[number]["key"];
 
 const inputClass =
   "h-11 w-full rounded-md border border-gray-200 bg-white px-4 text-sm text-slate-800 outline-none transition placeholder:text-gray-300 focus:border-[#005bff]";
 
-// Manzilni o'qiladigan matnga aylantirish (maydon nomlaridan qat'i nazar)
-function addressToText(address: AnyRecord): string {
-  return Object.entries(address)
-    .filter(
-      ([k, v]) =>
-        !HIDDEN_KEYS.includes(k) &&
-        (typeof v === "string" || typeof v === "number") &&
-        String(v) !== ""
-    )
-    .map(([, v]) => String(v))
-    .join(", ");
+const text = (v: unknown) => (v === null || v === undefined ? "" : String(v));
+
+// Manzilni o'qiladigan matnga aylantirish
+function addressToText(a: AnyRecord): string {
+  const street = [text(a.street), text(a.house)].filter(Boolean).join(", ");
+  return [text(a.company_name), street].filter(Boolean).join(" — ");
 }
 
 export default function AddressSection() {
@@ -47,23 +43,28 @@ export default function AddressSection() {
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | string | null>(null);
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [values, setValues] = useState<Record<FieldKey, string>>({ company_name: "", street: "", house: "", phone: "" });
+  const [isDefault, setIsDefault] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const openCreate = () => {
     setEditingId(null);
-    setValues({});
+    setValues({ company_name: "", street: "", house: "", phone: "" });
+    // Birinchi manzil avtomatik asosiy bo'ladi
+    setIsDefault(addresses.length === 0);
     setMessage(null);
     setShowForm(true);
   };
 
   const openEdit = (address: AnyRecord) => {
-    const initial: Record<string, string> = {};
-    ADDRESS_FIELDS.forEach(({ key }) => {
-      initial[key] = address[key] === undefined ? "" : String(address[key]);
-    });
     setEditingId(address.id as number | string);
-    setValues(initial);
+    setValues({
+      company_name: text(address.company_name),
+      street: text(address.street),
+      house: text(address.house),
+      phone: formatPhone(text(address.phone)),
+    });
+    setIsDefault(!!address.is_default);
     setMessage(null);
     setShowForm(true);
   };
@@ -72,16 +73,24 @@ export default function AddressSection() {
     e.preventDefault();
     setMessage(null);
 
-    // Bo'sh maydonlar yuborilmaydi (server "may not be blank" deb 400 qaytaradi)
-    const body = Object.fromEntries(
-      Object.entries(values)
-        .map(([k, v]) => [k, v.trim()])
-        .filter(([, v]) => v !== "")
-    );
-    if (Object.keys(body).length === 0) {
-      setMessage("Заполните хотя бы одно поле");
+    const trimmed = Object.fromEntries(Object.entries(values).map(([k, v]) => [k, v.trim()])) as Record<FieldKey, string>;
+    if (!trimmed.street && !trimmed.company_name) {
+      setMessage("Укажите улицу или название адреса");
       return;
     }
+    if (trimmed.phone && !isPhoneComplete(trimmed.phone)) {
+      setMessage(phoneIncompleteMessage(trimmed.phone));
+      return;
+    }
+
+    // Yangi manzilda bo'sh maydon yuborilmaydi ("may not be blank"),
+    // tahrirlashda esa bo'shatilgan maydon null bilan tozalanadi (maydonlar nullable)
+    const body: AddressBody = { is_default: isDefault };
+    (Object.keys(trimmed) as FieldKey[]).forEach((k) => {
+      // Telefon serverga "+998901234567" ko'rinishida (bo'sh joy, qavs, chiziqchasiz) ketadi
+      if (trimmed[k]) body[k] = k === "phone" ? normalizePhone(trimmed[k]) : trimmed[k];
+      else if (editingId !== null) body[k] = null;
+    });
 
     try {
       if (editingId !== null) {
@@ -90,8 +99,16 @@ export default function AddressSection() {
         await addAddress(body).unwrap();
       }
       setShowForm(false);
-      setValues({});
       setEditingId(null);
+    } catch (err) {
+      setMessage(formatApiError(err));
+    }
+  };
+
+  const makeDefault = async (id: number | string) => {
+    setMessage(null);
+    try {
+      await updateAddress({ id, body: { is_default: true } }).unwrap();
     } catch (err) {
       setMessage(formatApiError(err));
     }
@@ -105,6 +122,9 @@ export default function AddressSection() {
       setMessage(formatApiError(err));
     }
   };
+
+  // Asosiy manzil ro'yxatda birinchi turadi
+  const sorted = [...addresses].sort((a, b) => Number(!!b.is_default) - Number(!!a.is_default));
 
   return (
     <div className="bg-white p-5 md:p-6 rounded-xl border border-gray-100 shadow-sm">
@@ -128,35 +148,42 @@ export default function AddressSection() {
       )}
 
       {showForm && (
-        <form
-          onSubmit={onSubmit}
-          className="mb-6 rounded-lg border border-gray-100 p-4 md:p-5"
-        >
+        <form onSubmit={onSubmit} className="mb-6 rounded-lg border border-gray-100 p-4 md:p-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {ADDRESS_FIELDS.map(({ key, label }) => (
+            {ADDRESS_FIELDS.map(({ key, label, placeholder, max }) => (
               <div key={key}>
-                <label
-                  htmlFor={`addr-${key}`}
-                  className="mb-2 block text-xs font-medium text-slate-700"
-                >
+                <label htmlFor={`addr-${key}`} className="mb-2 block text-xs font-medium text-slate-700">
                   {label}
                 </label>
                 <input
                   id={`addr-${key}`}
-                  value={values[key] ?? ""}
-                  onChange={(e) =>
-                    setValues((prev) => ({ ...prev, [key]: e.target.value }))
-                  }
+                  type={key === "phone" ? "tel" : "text"}
+                  maxLength={max}
+                  value={values[key]}
+                  placeholder={placeholder}
+                  onChange={(e) => {
+                    const v = key === "phone" ? formatPhone(e.target.value) : e.target.value;
+                    setValues((prev) => ({ ...prev, [key]: v }));
+                  }}
                   className={inputClass}
                 />
+                {key === "phone" && <p className="mt-1.5 text-[11px] text-gray-400">Для номера Узбекистана начните с +998</p>}
               </div>
             ))}
           </div>
 
+          <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={isDefault}
+              onChange={(e) => setIsDefault(e.target.checked)}
+              className="h-4 w-4 accent-[#005bff]"
+            />
+            Основной адрес доставки
+          </label>
+
           {message && (
-            <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
-              {message}
-            </p>
+            <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">{message}</p>
           )}
 
           <div className="mt-5 flex gap-3">
@@ -179,29 +206,41 @@ export default function AddressSection() {
       )}
 
       {!showForm && message && (
-        <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
-          {message}
-        </p>
+        <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">{message}</p>
       )}
 
       {isLoading ? (
         <p className="text-sm text-gray-500">Загрузка...</p>
       ) : addresses.length === 0 && !error ? (
-        <p className="py-8 text-center text-sm text-gray-500">
-          У вас пока нет сохранённых адресов.
-        </p>
+        <p className="py-8 text-center text-sm text-gray-500">У вас пока нет сохранённых адресов.</p>
       ) : (
         <ul className="space-y-3">
-          {addresses.map((address, idx) => (
+          {sorted.map((address, idx) => (
             <li
               key={String(address.id ?? idx)}
-              className="flex items-start justify-between gap-4 rounded-lg border border-gray-100 px-4 py-3"
+              className={`flex items-start justify-between gap-4 rounded-lg border px-4 py-3 ${
+                address.is_default ? "border-[#005bff]/40 bg-blue-50/40" : "border-gray-100"
+              }`}
             >
-              <div className="flex items-start gap-3">
-                <MapPin size={18} className="mt-0.5 shrink-0 text-gray-400" />
-                <p className="text-sm text-slate-800">
-                  {addressToText(address) || "Адрес"}
-                </p>
+              <div className="flex min-w-0 items-start gap-3">
+                <MapPin size={18} className={`mt-0.5 shrink-0 ${address.is_default ? "text-[#005bff]" : "text-gray-400"}`} />
+                <div className="min-w-0">
+                  <p className="text-sm text-slate-800">
+                    {addressToText(address) || "Адрес"}
+                    {!!address.is_default && (
+                      <span className="ml-2 rounded bg-[#005bff] px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Основной</span>
+                    )}
+                  </p>
+                  {text(address.phone) && <p className="mt-0.5 text-xs text-gray-500">{formatPhone(text(address.phone))}</p>}
+                  {!address.is_default && (
+                    <button
+                      onClick={() => makeDefault(address.id as number | string)}
+                      className="mt-1 flex items-center gap-1 text-xs text-[#005bff] hover:underline"
+                    >
+                      <Star size={12} /> Сделать основным
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="flex shrink-0 gap-2">

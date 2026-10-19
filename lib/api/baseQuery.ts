@@ -24,6 +24,17 @@ const PUBLIC_PATHS = [
 // Bu yo'llarda 401 bo'lsa tokenni yangilashga urinmaymiz
 const NO_REAUTH = [...PUBLIC_PATHS, "/auth/logout/"];
 
+// Brauzerda saqlangan token (logout bo'lganda ular ham o'chiriladi)
+function stored(key: "token" | "refresh"): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(key) ?? sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+const storedToken = () => stored("token");
+
 // Tokensiz so'rovlar
 const publicBaseQuery = fetchBaseQuery({ baseUrl: BASE_URL });
 
@@ -31,7 +42,8 @@ const publicBaseQuery = fetchBaseQuery({ baseUrl: BASE_URL });
 const authBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   prepareHeaders: (headers, { getState }) => {
-    const token = (getState() as RootState).auth.token;
+    // Redux'da token bo'lmasa (masalan, dev'da store qayta yaratilganda) — saqlangan tokenni olamiz
+    const token = (getState() as RootState).auth.token ?? storedToken();
     if (token) headers.set("Authorization", `Bearer ${token}`);
     return headers;
   },
@@ -59,7 +71,9 @@ export const baseQueryWithReauth: BaseQueryFn<
   const skipReauth = NO_REAUTH.some((path) => url.includes(path));
 
   if (result.error?.status === 401 && !skipReauth) {
-    const refresh = (api.getState() as RootState).auth.refresh;
+    const auth = (api.getState() as RootState).auth;
+    const token = auth.token ?? storedToken();
+    const refresh = auth.refresh ?? stored("refresh");
 
     if (refresh) {
       const refreshResult = await publicBaseQuery(
@@ -77,6 +91,9 @@ export const baseQueryWithReauth: BaseQueryFn<
       } else {
         api.dispatch(logout());
       }
+    } else if (token) {
+      // Token yaroqsiz va yangilab bo'lmaydi — sessiyani tozalaymiz
+      api.dispatch(logout());
     }
   }
 

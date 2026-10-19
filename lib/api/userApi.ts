@@ -6,7 +6,6 @@ import { baseQueryWithReauth } from "./baseQuery";
    Swagger (/api/docs/) bilan solishtiring. Faqat SHU YERDA
    o'zgartirsangiz yetadi.
    Tasdiqlangan (Swagger): logout, profile, changePassword, addresses, orders
-   Taxminiy:               favorites
 ========================================================= */
 export const ENDPOINTS = {
   logout: "/auth/logout/",
@@ -14,7 +13,6 @@ export const ENDPOINTS = {
   changePassword: "/auth/password/change/",
   addresses: "/auth/addresses/",
   orders: "/orders/",
-  favorites: "/favorites/", // <-- taxminiy
 };
 
 /* =========================
@@ -39,6 +37,9 @@ export function toList(res: unknown): AnyRecord[] {
   return [];
 }
 
+/** Swagger: Address — company_name, region (ID), city (ID), street, house, phone, is_default */
+export type AddressBody = Record<string, string | number | boolean | null>;
+
 export interface ChangePasswordRequest {
   old_password: string;
   new_password: string;
@@ -61,7 +62,7 @@ export interface CreateOrderRequest {
 export const userApi = createApi({
   reducerPath: "userApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Profile", "Addresses", "Favorites", "Orders"],
+  tagTypes: ["Profile", "Addresses", "Orders"],
   endpoints: (builder) => ({
     logout: builder.mutation<unknown, { refresh: string }>({
       query: (body) => ({ url: ENDPOINTS.logout, method: "POST", body }),
@@ -84,14 +85,14 @@ export const userApi = createApi({
       providesTags: ["Addresses"],
     }),
 
-    addAddress: builder.mutation<AnyRecord, Record<string, string>>({
+    addAddress: builder.mutation<AnyRecord, AddressBody>({
       query: (body) => ({ url: ENDPOINTS.addresses, method: "POST", body }),
       invalidatesTags: ["Addresses"],
     }),
 
     updateAddress: builder.mutation<
       AnyRecord,
-      { id: number | string; body: Record<string, string> }
+      { id: number | string; body: AddressBody }
     >({
       query: ({ id, body }) => ({
         url: `${ENDPOINTS.addresses}${id}/`,
@@ -122,21 +123,6 @@ export const userApi = createApi({
       invalidatesTags: ["Orders"],
     }),
 
-    /* ---------- SEVIMLILAR ---------- */
-    getFavorites: builder.query<AnyRecord[], void>({
-      query: () => ENDPOINTS.favorites,
-      transformResponse: (res: unknown) => toList(res),
-      providesTags: ["Favorites"],
-    }),
-
-    removeFavorite: builder.mutation<unknown, number | string>({
-      query: (id) => ({
-        url: `${ENDPOINTS.favorites}${id}/`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Favorites"],
-    }),
-
     changePassword: builder.mutation<unknown, ChangePasswordRequest>({
       query: (body) => ({
         url: ENDPOINTS.changePassword,
@@ -158,6 +144,4 @@ export const {
   useDeleteAddressMutation,
   useGetOrdersQuery,
   useCreateOrderMutation,
-  useGetFavoritesQuery,
-  useRemoveFavoriteMutation,
 } = userApi;

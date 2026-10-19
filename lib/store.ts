@@ -4,6 +4,8 @@ import { authApi } from "./api/authApi";
 import { userApi } from "./api/userApi";
 import { promotionsApi } from "./api/promotionsApi";
 import { reviewsApi } from "./api/reviewsApi";
+import { adminApi } from "./api/adminApi";
+import { newsApi } from "./api/newsApi";
 import authReducer from "./authSlice";
 
 export const store = configureStore({
@@ -13,6 +15,8 @@ export const store = configureStore({
     [userApi.reducerPath]: userApi.reducer,
     [promotionsApi.reducerPath]: promotionsApi.reducer,
     [reviewsApi.reducerPath]: reviewsApi.reducer,
+    [adminApi.reducerPath]: adminApi.reducer,
+    [newsApi.reducerPath]: newsApi.reducer,
     auth: authReducer,
   },
   middleware: (getDefault) =>
@@ -21,7 +25,9 @@ export const store = configureStore({
       authApi.middleware,
       userApi.middleware,
       promotionsApi.middleware,
-      reviewsApi.middleware
+      reviewsApi.middleware,
+      adminApi.middleware,
+      newsApi.middleware
     ),
 });
 

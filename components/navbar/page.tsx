@@ -18,6 +18,7 @@ import { styles } from '@/styles/index.styles';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import CartDrawer from '@/components/cart/CartDrawer';
+import { useGetCategoriesQuery } from '@/lib/api/apiSlice';
 
 const navItems = [
   { label: 'О компании', uppercaseLabel: 'О КОМПАНИИ', href: '/Ocompany' },
@@ -30,7 +31,8 @@ const navItems = [
   { label: 'Контакты', uppercaseLabel: 'КОНТАКТЫ', href: '/contacts' },
 ];
 
-const catalogCategories = [
+// API'dan kategoriyalar kelmasa ko'rsatiladigan ro'yxat
+const fallbackCategories = [
   { title: 'Строительные материалы', href: '/catalog/building-materials' },
   { title: 'Отделочные материалы', href: '/catalog/finishing-materials' },
   { title: 'Электроинструмент', href: '/catalog/power-tools' },
@@ -54,6 +56,14 @@ export default function Header() {
   const { favorites } = useFavorites();
   const favoritesCount = favorites.length;
   const closeCart = useCallback(() => setIsCartOpen(false), []);
+
+  // Katalog menyusi — admin paneldagi faol kategoriyalar
+  const { data: categoriesData } = useGetCategoriesQuery();
+  const apiCategories = (categoriesData?.results ?? [])
+    .filter((c) => c.is_active)
+    .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name))
+    .map((c) => ({ title: c.name, href: `/catalog/${c.slug}` }));
+  const catalogCategories = apiCategories.length > 0 ? apiCategories : fallbackCategories;
   const badge = (n: number) => (n > 99 ? '99+' : n);
 
   return (
@@ -242,7 +252,14 @@ export default function Header() {
               />
               
               <div className="absolute top-12 md:top-14 left-0 w-72 bg-white rounded-xl shadow-xl border border-gray-100 py-3 z-20">
-                <div className="flex flex-col">
+                <div className="flex max-h-[70vh] flex-col overflow-y-auto">
+                  <Link
+                    href="/catalog"
+                    onClick={() => setIsCatalogOpen(false)}
+                    className="px-5 py-2.5 text-xs font-bold text-[#2563EB] hover:bg-[#EEF4FF] transition-colors"
+                  >
+                    Все товары
+                  </Link>
                   {catalogCategories.map((category, idx) => (
                     <Link
                       key={idx}

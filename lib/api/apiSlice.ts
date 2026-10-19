@@ -3,7 +3,7 @@ import { ApiListResponse, ApiProduct, ApiCategory, ApiBrand } from "@/types/api"
 
 // Backend ro'yxatni ba'zan massiv, ba'zan { count, pages, results } ko'rinishida qaytaradi —
 // komponentlar doim bir xil shaklni olishi uchun shu yerda moslaymiz
-function toListResponse<T>(res: unknown): ApiListResponse<T> {
+export function toListResponse<T>(res: unknown): ApiListResponse<T> {
   if (Array.isArray(res)) return { count: res.length, pages: 1, results: res as T[] };
   const obj = (res ?? {}) as Partial<ApiListResponse<T>>;
   const results = Array.isArray(obj.results) ? obj.results : [];
@@ -23,13 +23,21 @@ export const apiSlice = createApi({
   endpoints: (builder) => ({
     getProducts: builder.query<
       ApiListResponse<ApiProduct>,
-      { category?: string; search?: string; page?: number } | void
+      {
+        category?: string;
+        search?: string;
+        page?: number;
+        page_size?: number;
+        ordering?: string;
+      } | void
     >({
       query: (params) => {
         const query = new URLSearchParams();
         if (params?.category) query.set("category", params.category);
         if (params?.search) query.set("search", params.search);
         if (params?.page) query.set("page", String(params.page));
+        if (params?.page_size) query.set("page_size", String(params.page_size));
+        if (params?.ordering) query.set("ordering", params.ordering);
         const qs = query.toString();
         return `/products/${qs ? `?${qs}` : ""}`;
       },

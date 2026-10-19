@@ -72,12 +72,6 @@ export default function Login() {
   const router = useRouter();
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    if (localStorage.getItem("token") ?? sessionStorage.getItem("token")) {
-      router.replace("/profile");
-    }
-  }, [router]);
-
   // RTK Query mutation
   const [loginUser, { isLoading }] = useLoginMutation();
 
@@ -89,6 +83,18 @@ export default function Login() {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [serverError, setServerError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (localStorage.getItem("token") ?? sessionStorage.getItem("token")) {
+      router.replace("/profile");
+      return;
+    }
+    // Profil token yaroqsiz bo'lganda shu yerga ?expired=1 bilan qaytaradi
+    if (new URLSearchParams(window.location.search).get("expired")) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setServerError("Сессия истекла. Пожалуйста, войдите снова.");
+    }
+  }, [router]);
 
   // =========================
   // SUBMIT
