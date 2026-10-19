@@ -1,19 +1,11 @@
 "use client";
 
+import { Database } from "lucide-react";
 import { Badge, type Tone } from "./ui";
-import type { OrderStatus, TxStatus, Tier } from "@/lib/admin/db";
-
-export const STATUS_LABEL: Record<OrderStatus, string> = {
-  new: "Yangi",
-  processing: "Jarayonda",
-  shipping: "Yo'lda / Yuklangan",
-  delivered: "Yetkazilgan",
-  cancelled: "Bekor qilingan",
-  returned: "Qaytarilgan",
-};
+import { STATUS_LABEL, statusOf, type OrderStatus } from "@/lib/admin/orders";
 
 const STATUS_TONE: Record<OrderStatus, Tone> = {
-  new: "red",
+  pending: "red",
   processing: "amber",
   shipping: "blue",
   delivered: "green",
@@ -21,44 +13,14 @@ const STATUS_TONE: Record<OrderStatus, Tone> = {
   returned: "red",
 };
 
-export function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  return <Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge>;
-}
-
-export function PayBadge({ paid, cancelled }: { paid: boolean; cancelled?: boolean }) {
-  if (cancelled) return <Badge tone="gray">Bekor</Badge>;
-  return paid ? <Badge tone="green">To&apos;langan</Badge> : <Badge tone="amber">Kutilmoqda</Badge>;
-}
-
-export function TxBadge({ status }: { status: TxStatus }) {
-  const t: Record<TxStatus, Tone> = {
-    Muvaffaqiyatli: "blue",
-    Kutilmoqda: "amber",
-    Qaytarilgan: "gray",
-    "Bekor qilingan": "red",
-  };
-  return <Badge tone={t[status]}>• {status}</Badge>;
-}
-
-export function TierBadge({ tier, discount }: { tier: Tier; discount: number }) {
-  const cls: Record<Tier, string> = {
-    Platina: "bg-[#06214a] text-white",
-    Oltin: "bg-[#d6e8fb] text-[#186FD4]",
-    Kumush: "bg-[#eceff5] text-[#5b6a82]",
-    Standart: "bg-[#f1f3f8] text-[#6b7a90]",
-  };
-  return (
-    <span className={`inline-flex flex-col rounded-md px-2.5 py-1 text-[11px] font-semibold leading-tight ${cls[tier]}`}>
-      <span>{tier} Diler</span>
-      <span className="opacity-80">- {discount}%</span>
-    </span>
-  );
+export function OrderStatusBadge({ status }: { status: string }) {
+  const s = statusOf({ status });
+  return <Badge tone={STATUS_TONE[s]}>{STATUS_LABEL[s]}</Badge>;
 }
 
 export function Avatar({ name, className = "" }: { name: string; className?: string }) {
   const ini = name
-    .replace(/["«»]/g, "")
-    .replace(/MCHJ|XK|AJ|IP|OOO/g, "")
+    .replace(/["«»#]/g, "")
     .trim()
     .split(/\s+/)
     .slice(0, 2)
@@ -68,5 +30,21 @@ export function Avatar({ name, className = "" }: { name: string; className?: str
     <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#06214a] text-[13px] font-bold text-white ${className}`}>
       {ini || "?"}
     </span>
+  );
+}
+
+/** Backend'da kerakli endpoint yo'qligini ko'rsatadigan blok (soxta ma'lumot o'rniga) */
+export function ApiMissing({ title, text, endpoint }: { title: string; text: string; endpoint?: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#d5deec] bg-[#fafbfe] px-6 py-10 text-center">
+      <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#eef2fb] text-[#186FD4]">
+        <Database size={22} />
+      </span>
+      <p className="text-[15px] font-semibold text-[#0f1d3a]">{title}</p>
+      <p className="mt-1 max-w-md text-[13px] text-[#6b7a90]">{text}</p>
+      {endpoint && (
+        <code className="mt-3 rounded-md bg-[#eef2fb] px-2.5 py-1 text-[12px] text-[#16335f]">{endpoint}</code>
+      )}
+    </div>
   );
 }

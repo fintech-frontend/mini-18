@@ -29,8 +29,22 @@ const CSS = `
 }
 `;
 
-/* Ikki qatorli silliq area chart (tushum va sof foyda) */
-export function AreaChart({ data, height = 280 }: { data: Point[]; height?: number }) {
+/* Ikki qatorli silliq area chart (a — asosiy qator, b — ikkinchi qator) */
+export function AreaChart({
+  data,
+  height = 280,
+  aLabel = "Tushum",
+  bLabel = "Sof foyda",
+  formatA = (v: number) => `${fmtShort(v)} UZS`,
+  formatB = (v: number) => `${fmtShort(v)} UZS`,
+}: {
+  data: Point[];
+  height?: number;
+  aLabel?: string;
+  bLabel?: string;
+  formatA?: (v: number) => string;
+  formatB?: (v: number) => string;
+}) {
   const [hover, setHover] = useState<number | null>(null);
   const W = 700;
   const H = height;
@@ -127,8 +141,12 @@ export function AreaChart({ data, height = 280 }: { data: Point[]; height?: numb
           style={{ left: `clamp(0px, calc(${(x(hover) / W) * 100}% - 88px), calc(100% - 176px))` }}
         >
           <div className="mb-1 text-white/70">{hv.hint ?? hv.label}</div>
-          <div className="text-[13px] font-bold">Tushum: {fmtShort(hv.a)} UZS</div>
-          <div className="text-white/80">Sof foyda: {fmtShort(hv.b)} UZS</div>
+          <div className="text-[13px] font-bold">
+            {aLabel}: {formatA(hv.a)}
+          </div>
+          <div className="text-white/80">
+            {bLabel}: {formatB(hv.b)}
+          </div>
         </div>
       )}
     </div>

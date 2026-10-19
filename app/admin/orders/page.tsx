@@ -3,42 +3,25 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
+import { Download, Eye, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
+import { fmt, fmtDateTime, downloadCSV } from "@/lib/admin/format";
+import { Btn, Card, Confirm, Empty, Field, inputCls, Modal, PageHeader, Pagination, Tabs, usePageSlice } from "@/components/admin/ui";
+import { OrderStatusBadge } from "@/components/admin/shared";
 import {
-  Building2,
-  CheckCircle2,
-  Clock,
-  Download,
-  ListChecks,
-  MessageSquare,
-  Plus,
-  Printer,
-  Search,
-  Send,
-  Trash2,
-  Truck,
-  XCircle,
-  ShieldCheck,
-} from "lucide-react";
-import {
-  actions,
-  DAY,
-  orderSubtotal,
-  orderTotal,
-  useDB,
-  type Channel,
-  type Order,
-  type OrderItem,
-  type OrderStatus,
-  type PayMethod,
-  useNow,
-} from "@/lib/admin/db";
-import { dayLabel, downloadCSV, fmt, fmtDateTime, fmtTime } from "@/lib/admin/format";
-import { Badge, Btn, Card, Empty, Field, inputCls, Modal, PageHeader, Pagination, Tabs, usePageSlice } from "@/components/admin/ui";
-import { OrderStatusBadge, STATUS_LABEL } from "@/components/admin/shared";
-import { printDoc } from "@/lib/admin/print";
+  useCreateOrderMutation,
+  useDeleteOrderMutation,
+  useGetAdminOrdersQuery,
+  useUpdateOrderMutation,
+  type ApiOrder,
+} from "@/lib/api/adminApi";
+import { CURRENCY, money, NEXT_ACTION, NEXT_STATUS, ORDER_STATUSES, orderTime, STATUS_LABEL, statusOf, type OrderStatus } from "@/lib/admin/orders";
+import { getOrderDetails } from "@/lib/orderHistory";
+import { formatApiError } from "@/lib/apiError";
+import { toastApiError } from "@/lib/admin/notify";
 
-const PAGE = 6;
-type Tab = "all" | OrderStatus;
+const PAGE = 12;
+type Filter = "all" | OrderStatus;
+const rub = (n: number) => `${fmt(n, 2)} ${CURRENCY}`;
 
 export default function OrdersPage() {
   return (
@@ -49,27 +32,30 @@ export default function OrdersPage() {
 }
 
 function Orders() {
-  const db = useDB();
   const sp = useSearchParams();
   const router = useRouter();
-  const now = useNow();
-  const [tab, setTab] = useState<Tab>("all");
+  const { data: orders = [], isLoading, isFetching, error, refetch } = useGetAdminOrdersQuery();
+  const [updateOrder] = useUpdateOrderMutation();
+  const [deleteOrder] = useDeleteOrderMutation();
+
   const [q, setQ] = useState(sp.get("q") ?? "");
-  const [when, setWhen] = useState("all");
-  const [pay, setPay] = useState("all");
-  const [channel, setChannel] = useState("all");
+  const [flt, setFlt] = useState<Filter>(((sp.get("status") as OrderStatus) || "all") as Filter);
+  const [sort, setSort] = useState<"new" | "old" | "sum">("new");
   const [page, setPage] = useState(1);
-  const [sel, setSel] = useState<string | null>(null);
+  const [view, setView] = useState<ApiOrder | null>(null);
+  const [del, setDel] = useState<ApiOrder | null>(null);
   const [creating, setCreating] = useState(false);
 
+  // URL o'zgarsa (qidiruv / bildirishnoma) filtrlar yangilanadi
   const spq = sp.get("q");
+  const sps = sp.get("status");
   const spn = sp.get("new");
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setQ(spq ?? "");
+    setFlt(sps && (ORDER_STATUSES as readonly string[]).includes(sps) ? (sps as OrderStatus) : "all");
     setPage(1);
-    setTab("all");
-  }, [spq]);
+  }, [spq, sps]);
   useEffect(() => {
     if (spn) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -78,89 +64,63 @@ function Orders() {
     }
   }, [spn, router]);
 
-  const count = (s: OrderStatus) => db.orders.filter((o) => o.status === s).length;
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: orders.length };
+    ORDER_STATUSES.forEach((s) => (c[s] = orders.filter((o) => statusOf(o) === s).length));
+    return c;
+  }, [orders]);
 
   const rows = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    return db.orders.filter((o) => {
-      if (tab !== "all" && o.status !== tab) return false;
-      if (s && !(o.number + o.customerName + o.phone + o.inn).toLowerCase().includes(s)) return false;
-      if (when === "today" && o.createdAt < start.getTime()) return false;
-      if (when === "7" && o.createdAt < now - 7 * DAY) return false;
-      if (when === "30" && o.createdAt < now - 30 * DAY) return false;
-      if (pay === "paid" && !o.paid) return false;
-      if (pay === "unpaid" && o.paid) return false;
-      if (channel !== "all" && o.channel !== channel) return false;
-      return true;
-    });
-  }, [db.orders, tab, q, when, pay, channel, now]);
+    const s = q.trim().toLowerCase().replace(/^#/, "");
+    let r = orders.filter((o) => (flt === "all" || statusOf(o) === flt) && (!s || o.number.toLowerCase().includes(s)));
+    if (sort === "old") r = [...r].sort((a, b) => orderTime(a) - orderTime(b));
+    else if (sort === "sum") r = [...r].sort((a, b) => money(b.total) - money(a.total));
+    else r = [...r].sort((a, b) => orderTime(b) - orderTime(a));
+    return r;
+  }, [orders, q, flt, sort]);
 
   const { slice, pages, page: cur } = usePageSlice(rows, page, PAGE);
-  const selected = db.orders.find((o) => o.id === sel) ?? slice[0] ?? null;
 
-  const reset = () => {
-    setQ("");
-    setWhen("all");
-    setPay("all");
-    setChannel("all");
-    setTab("all");
-    setPage(1);
+  const setStatus = async (o: ApiOrder, status: OrderStatus) => {
+    try {
+      await updateOrder({ id: o.id, body: { status } }).unwrap();
+      toast.success(`#${o.number}: ${STATUS_LABEL[status]}`);
+    } catch (err) {
+      toastApiError(err);
+    }
   };
 
   return (
     <>
       <PageHeader
-        crumbs={["Sotuvlar", "Buyurtmalar ro'yxati"]}
-        title="Buyurtmalar boshqaruvi (Sotuvlar)"
-        badge={
-          <span className="rounded-md bg-[#eef2fb] px-3 py-1.5 text-[12px] text-[#4a5a73]">Real-vaqt sinxronizatsiya: Faol</span>
-        }
+        crumbs={["Asosiy", "Savdo", "Buyurtmalar"]}
+        title="Buyurtmalar"
+        subtitle="Saytdan tushgan barcha buyurtmalar (API: /api/orders/)."
         actions={
           <>
+            <Btn variant="ghost" onClick={() => refetch()} disabled={isFetching}>
+              <RefreshCw size={15} className={isFetching ? "animate-spin" : ""} /> Yangilash
+            </Btn>
             <Btn
               variant="ghost"
               onClick={() =>
                 downloadCSV("buyurtmalar.csv", [
-                  ["Buyurtma", "Mijoz", "INN", "Kanal", "Sana", "Summa", "Holat", "To'lov"],
-                  ...rows.map((o) => [o.number, o.customerName, o.inn, o.channel, fmtDateTime(o.createdAt), orderTotal(o), STATUS_LABEL[o.status], o.paid ? "To'langan" : "Kutilmoqda"]),
+                  ["Raqam", "Sana", "Status", "Mijoz ID", "Summa", "Jami"],
+                  ...rows.map((o) => [o.number, fmtDateTime(orderTime(o)), STATUS_LABEL[statusOf(o)], o.user ?? "mehmon", money(o.subtotal), money(o.total)]),
                 ])
               }
             >
-              <Download size={15} /> Eksport (.XLSX)
-            </Btn>
-            <Btn variant="ghost" onClick={() => window.print()}>
-              <Printer size={15} /> Hisobot chop etish
+              <Download size={15} /> Eksport
             </Btn>
             <Btn variant="dark" onClick={() => setCreating(true)}>
-              <Plus size={16} /> Yangi buyurtma yaratish
+              <Plus size={16} /> Qo&apos;lda buyurtma
             </Btn>
           </>
         }
       />
 
-      <Card className="!p-3">
-        <Tabs
-          value={tab}
-          onChange={(v) => {
-            setTab(v);
-            setPage(1);
-          }}
-          tabs={[
-            { id: "all", label: "Barchasi", count: db.orders.length },
-            { id: "new", label: "Yangi", count: count("new"), tone: "red" },
-            { id: "processing", label: "Jarayonda", count: count("processing") },
-            { id: "shipping", label: "Yo'lda / Yuklangan", count: count("shipping") },
-            { id: "delivered", label: "Yetkazilgan", count: count("delivered") },
-            { id: "cancelled", label: "Bekor qilingan", count: count("cancelled") },
-            { id: "returned", label: "Qaytarilgan", count: count("returned") },
-          ]}
-        />
-      </Card>
-
-      <Card className="mt-3 !p-3">
-        <div className="grid gap-2.5 md:grid-cols-[1fr_170px_170px_190px_auto]">
+      <Card>
+        <div className="mb-4 grid gap-3 md:grid-cols-[1fr_200px]">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8794aa]" />
             <input
@@ -169,486 +129,274 @@ function Orders() {
                 setQ(e.target.value);
                 setPage(1);
               }}
-              placeholder="Buyurtma #, Mijoz ismi, telefon, INN bo'yicha..."
+              placeholder="Buyurtma raqami bo'yicha qidirish..."
               className={`${inputCls} pl-9`}
             />
           </div>
-          <select value={when} onChange={(e) => { setWhen(e.target.value); setPage(1); }} className={inputCls}>
-            <option value="all">Barcha sanalar</option>
-            <option value="today">Bugun</option>
-            <option value="7">Oxirgi 7 kun</option>
-            <option value="30">Oxirgi 30 kun</option>
+          <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} className={inputCls}>
+            <option value="new">Saralash: Yangilari</option>
+            <option value="old">Eskilari</option>
+            <option value="sum">Summa (katta)</option>
           </select>
-          <select value={pay} onChange={(e) => { setPay(e.target.value); setPage(1); }} className={inputCls}>
-            <option value="all">To&apos;lov: Barchasi</option>
-            <option value="paid">To&apos;langan</option>
-            <option value="unpaid">Kutilmoqda</option>
-          </select>
-          <select value={channel} onChange={(e) => { setChannel(e.target.value); setPage(1); }} className={inputCls}>
-            <option value="all">Barcha kanallar</option>
-            <option>B2B Ulgurji</option>
-            <option>Chakana savdo</option>
-            <option>Telegram Bot</option>
-          </select>
-          <Btn variant="soft" onClick={reset} title="Filtrlarni tozalash">
-            <XCircle size={16} /> Tozalash
-          </Btn>
         </div>
+
+        <Tabs
+          value={flt}
+          onChange={(v) => {
+            setFlt(v);
+            setPage(1);
+          }}
+          tabs={[
+            { id: "all" as Filter, label: "Barchasi", count: counts.all },
+            ...ORDER_STATUSES.map((s) => ({ id: s as Filter, label: STATUS_LABEL[s], count: counts[s], tone: s === "pending" ? ("red" as const) : undefined })),
+          ]}
+        />
+
+        {error && (
+          <p className="mt-3 rounded-lg bg-[#fdecec] px-4 py-3 text-[13px] text-[#c0262d]">Buyurtmalarni yuklab bo&apos;lmadi: {formatApiError(error)}</p>
+        )}
+
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[820px] text-left text-[13px]">
+            <thead>
+              <tr className="bg-[#f6f8fc] text-[11px] uppercase tracking-wide text-[#6b7a90]">
+                {["Raqam", "Sana", "Mijoz", "Summa", "Status", "Keyingi qadam", ""].map((h) => (
+                  <th key={h} className="px-3 py-3 font-semibold">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {slice.map((o) => {
+                const st = statusOf(o);
+                const next = NEXT_STATUS[st];
+                return (
+                  <tr key={o.id} className="border-b border-[#eef1f6] last:border-0 hover:bg-[#fafbfe]">
+                    <td className="px-3 py-3 font-semibold">#{o.number}</td>
+                    <td className="px-3 py-3 text-[#4a5a73]">{fmtDateTime(orderTime(o))}</td>
+                    <td className="px-3 py-3 text-[#4a5a73]">{o.user ? `Foydalanuvchi #${o.user}` : "Mehmon"}</td>
+                    <td className="px-3 py-3 font-semibold">{rub(money(o.total))}</td>
+                    <td className="px-3 py-3">
+                      <OrderStatusBadge status={o.status} />
+                    </td>
+                    <td className="px-3 py-3">
+                      {next ? (
+                        <Btn size="sm" variant="primary" onClick={() => setStatus(o, next)}>
+                          {NEXT_ACTION[st]}
+                        </Btn>
+                      ) : (
+                        <span className="text-[12px] text-[#8794aa]">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex justify-end gap-1">
+                        <button onClick={() => setView(o)} className="rounded-lg p-2 text-[#16335f] hover:bg-[#eef2fb]" aria-label="Ko'rish">
+                          <Eye size={16} />
+                        </button>
+                        <button onClick={() => setDel(o)} className="rounded-lg p-2 text-[#c0262d] hover:bg-[#fdecec]" aria-label="O'chirish">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {isLoading && <p className="py-10 text-center text-[13px] text-[#6b7a90]">Yuklanmoqda...</p>}
+          {!isLoading && !error && rows.length === 0 && <Empty text="Buyurtmalar topilmadi" />}
+        </div>
+        <Pagination
+          page={cur}
+          pages={pages}
+          onChange={setPage}
+          info={
+            <>
+              Ko&apos;rsatilmoqda: {rows.length ? (cur - 1) * PAGE + 1 : 0} - {Math.min(cur * PAGE, rows.length)} / jami {rows.length} ta
+            </>
+          }
+        />
       </Card>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_480px]">
-        <div>
-          <div className="space-y-2.5">
-            {slice.length === 0 && (
-              <Card>
-                <Empty text="Buyurtmalar topilmadi" />
-              </Card>
-            )}
-            {slice.map((o) => {
-              const on = selected?.id === o.id;
-              return (
-                <button
-                  key={o.id}
-                  onClick={() => setSel(o.id)}
-                  className={`block w-full rounded-xl bg-white p-4 text-left shadow-[0_1px_3px_rgba(16,34,74,0.06)] transition hover:shadow-md ${
-                    on ? "border-l-4 border-[#186FD4]" : "border-l-4 border-transparent"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[17px] font-bold">#{o.number}</span>
-                        <Badge tone={o.channel === "B2B Ulgurji" ? "blue" : "gray"}>{o.channel}</Badge>
-                        <span className="flex items-center gap-1 text-[11px] text-[#8794aa]">
-                          <Clock size={12} /> {fmtTime(o.createdAt)}, {dayLabel(o.createdAt).split(",")[0]}
-                        </span>
-                      </div>
-                      <div className="mt-1.5 truncate text-[14px] font-semibold">
-                        {o.customerName}{" "}
-                        <span className="font-normal text-[#8794aa]">
-                          • {o.inn !== "—" ? `INN: ${o.inn}` : o.phone}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <div className="text-[18px] font-bold">{fmt(orderTotal(o))} UZS</div>
-                      <div className="text-[10px] uppercase tracking-wide text-[#8794aa]">Umumiy qiymat</div>
-                    </div>
-                  </div>
-                  <div className="mt-3 rounded-lg bg-[#f6f8fc] px-3 py-2 text-[12px] text-[#4a5a73]">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="truncate">
-                        {o.items.map((i) => `${i.name.split(" ").slice(0, 2).join(" ")} (${fmt(i.qty, 1)} ${i.unit})`).join(", ")}
-                      </span>
-                      <span className="shrink-0 font-semibold">{o.items.length} pozitsiya</span>
-                    </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <OrderStatusBadge status={o.status} />
-                      {o.paid ? <Badge tone="green">To&apos;langan ({o.payMethod})</Badge> : o.status !== "cancelled" && <Badge tone="amber">To&apos;lov kutilmoqda</Badge>}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-          <Pagination
-            page={cur}
-            pages={pages}
-            onChange={setPage}
-            info={<>{fmt(db.orders.length)} ta buyurtmadan {rows.length ? (cur - 1) * PAGE + 1 : 0}-{Math.min(cur * PAGE, rows.length)} ko&apos;rsatilmoqda</>}
-          />
-        </div>
-
-        {selected ? <Detail key={selected.id} order={selected} /> : <Card><Empty text="Buyurtma tanlang" /></Card>}
-      </div>
-
-      {creating && <NewOrder onClose={() => setCreating(false)} onCreated={(id) => { setSel(id); setTab("all"); setQ(""); setPage(1); }} />}
+      {view && <OrderModal key={view.id} order={orders.find((o) => o.id === view.id) ?? view} onClose={() => setView(null)} onStatus={setStatus} />}
+      {creating && <CreateOrderModal onClose={() => setCreating(false)} />}
+      <Confirm
+        open={!!del}
+        title="Buyurtmani o'chirish"
+        text={`#${del?.number} buyurtmasi butunlay o'chiriladi. Bu amalni qaytarib bo'lmaydi.`}
+        onClose={() => setDel(null)}
+        onYes={async () => {
+          if (!del) return;
+          try {
+            await deleteOrder(del.id).unwrap();
+            toast.success("Buyurtma o'chirildi");
+          } catch (err) {
+            toastApiError(err);
+          }
+        }}
+      />
     </>
   );
 }
 
-const NEXT: Partial<Record<OrderStatus, { to: OrderStatus; label: string }>> = {
-  new: { to: "processing", label: "Jarayonga olish" },
-  processing: { to: "shipping", label: "Yuklab jo'natish" },
-  shipping: { to: "delivered", label: "Yetkazildi deb belgilash" },
-};
-
-function Detail({ order: o }: { order: Order }) {
-  const [note, setNote] = useState("");
-  const [cancel, setCancel] = useState(false);
-  const done = o.status === "delivered" || o.status === "cancelled" || o.status === "returned";
-  const next = NEXT[o.status];
-  const sub = orderSubtotal(o);
-
-  const invoice = () =>
-    printDoc(
-      `Hisob-faktura #${o.number}`,
-      `<h2>Hisob-faktura #${o.number}</h2><p>Sana: ${fmtDateTime(o.createdAt)}</p><p><b>Mijoz:</b> ${o.customerName} (INN: ${o.inn})<br/><b>Manzil:</b> ${o.address}</p>
-      <table><tr><th>Tovar</th><th>Miqdor</th><th>Narx</th><th>Summa</th></tr>${o.items
-        .map((i) => `<tr><td>${i.name}</td><td>${fmt(i.qty, 1)} ${i.unit}</td><td>${fmt(i.price)}</td><td>${fmt(i.qty * i.price)}</td></tr>`)
-        .join("")}</table>
-      <p>Oraliq summa: ${fmt(sub)} UZS<br/>Chegirma: -${fmt(o.discount)} UZS<br/>Yetkazib berish: ${fmt(o.delivery)} UZS<br/><b>JAMI: ${fmt(orderTotal(o))} UZS</b> (QQS 12% ichida)</p>`
-    );
-  const ttn = () =>
-    printDoc(
-      `TTN #${o.number}`,
-      `<h2>Yuk xati (TTN) #${o.number}-A</h2><p>Sana: ${fmtDateTime(Date.now())}</p><p><b>Qabul qiluvchi:</b> ${o.customerName}<br/><b>Manzil:</b> ${o.address}<br/><b>Telefon:</b> ${o.phone}</p>
-      <table><tr><th>Tovar</th><th>Miqdor</th></tr>${o.items.map((i) => `<tr><td>${i.name}</td><td>${fmt(i.qty, 1)} ${i.unit}</td></tr>`).join("")}</table>
-      <p>Haydovchi imzosi: ____________ &nbsp;&nbsp; Qabul qildi: ____________</p>`
-    );
-
-  return (
-    <Card className="h-fit xl:sticky xl:top-[84px]">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-[21px] font-bold">#{o.number}</h2>
-            <OrderStatusBadge status={o.status} />
-          </div>
-          <div className="mt-1 text-[12px] text-[#6b7a90]">Yaratilgan vaqti: {fmtDateTime(o.createdAt)} • Operator: Dilshod Ergashev</div>
-        </div>
-        <Btn variant="soft" size="sm" onClick={invoice} aria-label="Chop etish">
-          <Printer size={15} />
-        </Btn>
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {next ? (
-          <button
-            onClick={() => {
-              actions.setOrderStatus(o.id, next.to);
-              toast.success(`${next.label}: bajarildi`);
-            }}
-            className="flex flex-col items-center gap-1.5 rounded-lg bg-[#186FD4] p-2.5 text-center text-[11px] font-semibold text-white hover:bg-[#135bb0]"
-          >
-            <CheckCircle2 size={20} /> {next.label}
-          </button>
-        ) : (
-          <div className="flex flex-col items-center gap-1.5 rounded-lg bg-[#eef2fb] p-2.5 text-center text-[11px] font-semibold text-[#6b7a90]">
-            <CheckCircle2 size={20} /> Yakunlangan
-          </div>
-        )}
-        <button onClick={invoice} className="flex flex-col items-center gap-1.5 rounded-lg bg-[#eef2fb] p-2.5 text-center text-[11px] font-semibold text-[#16335f] hover:bg-[#e1e8f7]">
-          <ListChecks size={20} /> Hisob-faktura chop etish
-        </button>
-        <button onClick={ttn} className="flex flex-col items-center gap-1.5 rounded-lg bg-[#eef2fb] p-2.5 text-center text-[11px] font-semibold text-[#16335f] hover:bg-[#e1e8f7]">
-          <Truck size={20} /> Yuk xati (TTN) generatsiya
-        </button>
-        <button
-          disabled={done}
-          onClick={() => setCancel(true)}
-          className="flex flex-col items-center gap-1.5 rounded-lg bg-[#fdecec] p-2.5 text-center text-[11px] font-semibold text-[#c0262d] hover:bg-[#fbdada] disabled:opacity-40"
-        >
-          <XCircle size={20} /> Bekor qilish
-        </button>
-      </div>
-      {o.status === "delivered" && (
-        <Btn variant="ghost" size="sm" className="mt-2 w-full" onClick={() => actions.setOrderStatus(o.id, "returned")}>
-          Mijoz qaytardi — qaytarilgan deb belgilash
-        </Btn>
-      )}
-      {!o.paid && o.status !== "cancelled" && (
-        <Btn
-          variant="soft"
-          size="sm"
-          className="mt-2 w-full"
-          onClick={() => {
-            actions.markOrderPaid(o.id);
-            toast.success("To'lov tasdiqlandi");
-          }}
-        >
-          <ShieldCheck size={15} /> To&apos;lovni tasdiqlash ({o.payMethod})
-        </Btn>
-      )}
-
-      <Section title="Yetkazib berish holati va xronologiya" right={<span className="text-[11px] font-semibold text-[#186FD4]">Bosqich: {Math.min(o.timeline.length, 5)}/5</span>}>
-        <ol className="space-y-3">
-          {o.timeline.map((t, i) => (
-            <li key={i} className="flex gap-3">
-              <span className="mt-1 h-3 w-3 shrink-0 rounded-full bg-[#186FD4]" />
-              <div className="text-[12px]">
-                <b>{fmtTime(t.at)}</b> — {t.text}
-                <div className="text-[11px] text-[#8794aa]">{fmtDateTime(t.at)}</div>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </Section>
-
-      <Section title="Mijoz va obyekt ma'lumotlari" icon={<Building2 size={15} className="text-[#186FD4]" />}>
-        <div className="grid grid-cols-2 gap-3 rounded-lg bg-[#f6f8fc] p-3 text-[12px]">
-          <Info l="Kompaniya nomi" v={o.customerName} />
-          <Info l="Soliq to'lovchi INN" v={o.inn} />
-          <Info l="Telefon raqam" v={o.phone} accent />
-          <Info l="Yetkazib berish manzili" v={o.address} />
-        </div>
-      </Section>
-
-      <Section title="Mahsulotlar tarkibi" right={<span className="text-[11px] text-[#6b7a90]">{o.items.length} ta pozitsiya</span>}>
-        <div className="space-y-2 rounded-lg bg-[#f6f8fc] p-3">
-          {o.items.map((i) => (
-            <div key={i.productId} className="flex items-center justify-between gap-3 text-[12px]">
-              <div className="min-w-0">
-                <div className="truncate font-semibold">{i.name}</div>
-                <div className="text-[#8794aa]">
-                  {fmt(i.qty, 1)} {i.unit} • {fmt(i.price)} UZS / {i.unit}
-                </div>
-              </div>
-              <b className="shrink-0 text-[13px]">{fmt(i.qty * i.price)} UZS</b>
-            </div>
-          ))}
-          {o.delivery > 0 && (
-            <div className="flex justify-between border-t border-[#e4e9f3] pt-2 text-[12px]">
-              <span className="font-semibold">Yetkazib berish xizmati</span>
-              <b>{fmt(o.delivery)} UZS</b>
-            </div>
-          )}
-        </div>
-        <dl className="mt-3 space-y-1.5 px-1 text-[12px] text-[#4a5a73]">
-          <Row l="Oraliq summa:" v={`${fmt(sub)} UZS`} />
-          {o.discount > 0 && <Row l="Shartnomaviy chegirma:" v={`-${fmt(o.discount)} UZS`} green />}
-          <Row l="Yetkazib berish:" v={`+${fmt(o.delivery)} UZS`} />
-          <Row l="QQS (12%):" v="Narx ichida kiritilgan" />
-        </dl>
-        <div className="mt-3 flex items-center justify-between rounded-lg bg-[#eef2fb] px-4 py-3">
-          <span className="text-[13px] font-bold">JAMI TO&apos;LOV:</span>
-          <span className="text-[22px] font-bold">{fmt(orderTotal(o))} UZS</span>
-        </div>
-      </Section>
-
-      <Section title="To'lov tranzaksiyasi">
-        <div className="flex items-center justify-between rounded-lg bg-[#f6f8fc] p-3 text-[12px]">
-          <div>
-            <div className="font-semibold">{o.payMethod}</div>
-            <div className="text-[#8794aa]">Tranzaksiya ID: #TRX-{o.number.split("-")[2]}</div>
-          </div>
-          {o.paid ? <Badge tone="green">TO&apos;LIQ TO&apos;LANGAN</Badge> : <Badge tone="amber">KUTILMOQDA</Badge>}
-        </div>
-      </Section>
-
-      <Section title="Ichki operatsion izohlar" icon={<MessageSquare size={15} className="text-[#186FD4]" />}>
-        {o.notes.map((n, i) => (
-          <div key={i} className="mb-2 rounded-lg bg-[#f6f8fc] p-3 text-[12px]">
-            <div className="mb-1 flex justify-between text-[11px] text-[#6b7a90]">
-              <b className="text-[#0f1d3a]">{n.who}</b>
-              {fmtTime(n.at)}
-            </div>
-            {n.text}
-          </div>
-        ))}
-        <form
-          className="flex gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!note.trim()) return;
-            actions.addOrderNote(o.id, note.trim());
-            setNote("");
-          }}
-        >
-          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Yangi ichki izoh qoldirish..." className={inputCls} />
-          <Btn variant="primary" type="submit">
-            <Send size={14} /> Qo&apos;shish
-          </Btn>
-        </form>
-      </Section>
-
-      <Modal
-        open={cancel}
-        onClose={() => setCancel(false)}
-        title="Buyurtmani bekor qilish"
-        footer={
-          <>
-            <Btn variant="ghost" onClick={() => setCancel(false)}>Yo&apos;q</Btn>
-            <Btn
-              variant="dark"
-              className="!bg-[#c0262d]"
-              onClick={() => {
-                actions.setOrderStatus(o.id, "cancelled");
-                setCancel(false);
-                toast.success("Buyurtma bekor qilindi, tovar omborga qaytdi");
-              }}
-            >
-              Ha, bekor qilish
-            </Btn>
-          </>
-        }
-      >
-        <p className="text-[14px] text-[#4a5a73]">#{o.number} buyurtmasi bekor qilinadi va tovarlar ombor qoldig&apos;iga qaytariladi.</p>
-      </Modal>
-    </Card>
-  );
-}
-
-function Section({ title, right, icon, children }: { title: string; right?: React.ReactNode; icon?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="mt-5">
-      <div className="mb-2.5 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-[13px] font-bold">
-          {icon}
-          {title}
-        </h3>
-        {right}
-      </div>
-      {children}
-    </div>
-  );
-}
-const Info = ({ l, v, accent }: { l: string; v: string; accent?: boolean }) => (
-  <div>
-    <div className="text-[10px] uppercase tracking-wide text-[#8794aa]">{l}</div>
-    <div className={`font-semibold ${accent ? "text-[#186FD4]" : ""}`}>{v}</div>
-  </div>
-);
-const Row = ({ l, v, green }: { l: string; v: string; green?: boolean }) => (
-  <div className="flex justify-between">
-    <dt>{l}</dt>
-    <dd className={green ? "font-semibold text-[#12713c]" : ""}>{v}</dd>
-  </div>
-);
-
-/* ---------- Yangi buyurtma ---------- */
-
-function NewOrder({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string) => void }) {
-  const db = useDB();
-  const [customerId, setCustomerId] = useState(db.customers[0]?.id ?? "");
-  const [channelSel, setChannelSel] = useState<Channel | "auto">("auto");
-  const [payMethod, setPayMethod] = useState<PayMethod>("Bank o'tkazmasi");
-  const [paid, setPaid] = useState(false);
-  const [delivery, setDelivery] = useState(0);
-  const [lines, setLines] = useState<{ productId: string; qty: number }[]>([{ productId: db.products[0]?.id ?? "", qty: 1 }]);
-
-  const c = db.customers.find((x) => x.id === customerId);
-  const b2b = c?.type === "b2b";
-  const channel: Channel = channelSel === "auto" ? (b2b ? "B2B Ulgurji" : "Chakana savdo") : channelSel;
-
-  const items: OrderItem[] = lines
-    .map((l) => {
-      const p = db.products.find((x) => x.id === l.productId);
-      return p ? { productId: p.id, name: p.name, qty: l.qty, unit: p.unit, price: channel === "B2B Ulgurji" ? p.b2bPrice : p.price } : null;
-    })
-    .filter((x): x is OrderItem => !!x);
-  const sub = items.reduce((s, i) => s + i.qty * i.price, 0);
-  const disc = c ? Math.round((sub * c.discount) / 100) : 0;
-  const total = sub - disc + delivery;
-
-  const submit = () => {
-    if (!c) return toast.error("Mijozni tanlang");
-    if (items.length === 0 || items.some((i) => !(i.qty > 0))) return toast.error("Mahsulot va miqdorni kiriting");
-    for (const i of items) {
-      const p = db.products.find((x) => x.id === i.productId)!;
-      if (i.qty > p.stock) return toast.error(`"${p.name}" omborda yetarli emas (qoldiq: ${p.stock} ${p.unit})`);
-    }
-    const o = actions.createOrder({ customerId, channel, items, delivery, payMethod, paid });
-    toast.success(`Buyurtma #${o.number} yaratildi`);
-    onCreated(o.id);
-    onClose();
-  };
+function OrderModal({
+  order,
+  onClose,
+  onStatus,
+}: {
+  order: ApiOrder;
+  onClose: () => void;
+  onStatus: (o: ApiOrder, s: OrderStatus) => void;
+}) {
+  const st = statusOf(order);
+  // Buyurtma tarkibi API'da saqlanmaydi — faqat shu brauzerda berilgan bo'lsa ko'rinadi
+  const [details] = useState(() => getOrderDetails(order.number));
 
   return (
     <Modal
       open
       wide
       onClose={onClose}
-      title="Yangi buyurtma yaratish"
+      title={`Buyurtma #${order.number}`}
+      subtitle={fmtDateTime(orderTime(order))}
       footer={
-        <>
-          <span className="mr-auto text-[14px]">
-            Jami: <b className="text-[18px]">{fmt(total)} UZS</b>
-          </span>
-          <Btn variant="soft" onClick={onClose}>Bekor qilish</Btn>
-          <Btn variant="dark" onClick={submit}>Buyurtmani saqlash</Btn>
-        </>
+        <Btn variant="soft" onClick={onClose}>
+          Yopish
+        </Btn>
       }
     >
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Mijoz *">
-          <select className={inputCls} value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
-            {db.customers.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.company} {x.discount ? `(-${x.discount}%)` : ""}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Savdo kanali">
-          <select className={inputCls} value={channelSel} onChange={(e) => setChannelSel(e.target.value as Channel | "auto")}>
-            <option value="auto">Avtomatik ({channel})</option>
-            <option>B2B Ulgurji</option>
-            <option>Chakana savdo</option>
-            <option>Telegram Bot</option>
-          </select>
-        </Field>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Info label="Status">
+          <OrderStatusBadge status={order.status} />
+        </Info>
+        <Info label="Mijoz">{order.user ? `Foydalanuvchi #${order.user}` : "Mehmon (ro'yxatdan o'tmagan)"}</Info>
+        <Info label="ID">{order.id}</Info>
+        <Info label="Summa (chegirmasiz)">{rub(money(order.subtotal))}</Info>
+        <Info label="Jami">
+          <b>{rub(money(order.total))}</b>
+        </Info>
+        <Info label="Chegirma">{rub(Math.max(0, money(order.subtotal) - money(order.total)))}</Info>
       </div>
 
       <div className="mt-5">
-        <div className="mb-2 text-[13px] font-bold">Mahsulotlar</div>
-        <div className="space-y-2">
-          {lines.map((l, i) => {
-            const p = db.products.find((x) => x.id === l.productId);
-            return (
-              <div key={i} className="grid grid-cols-[1fr_110px_auto] items-center gap-2">
-                <select
-                  className={inputCls}
-                  value={l.productId}
-                  onChange={(e) => setLines((a) => a.map((x, k) => (k === i ? { ...x, productId: e.target.value } : x)))}
-                >
-                  {db.products.map((x) => (
-                    <option key={x.id} value={x.id}>
-                      {x.name} — {fmt(channel === "B2B Ulgurji" ? x.b2bPrice : x.price)} UZS (qoldiq {fmt(x.stock, 1)})
-                    </option>
-                  ))}
-                </select>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min={0}
-                    step="any"
-                    value={l.qty || ""}
-                    onChange={(e) => setLines((a) => a.map((x, k) => (k === i ? { ...x, qty: +e.target.value } : x)))}
-                    className={`${inputCls} pr-10`}
-                  />
-                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-[#8794aa]">{p?.unit}</span>
-                </div>
-                <button
-                  disabled={lines.length === 1}
-                  onClick={() => setLines((a) => a.filter((_, k) => k !== i))}
-                  className="rounded-lg p-2 text-[#c0262d] hover:bg-[#fdecec] disabled:opacity-30"
-                  aria-label="Olib tashlash"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            );
-          })}
+        <div className="mb-2 text-[12px] font-medium text-[#4a5a73]">Statusni o&apos;zgartirish</div>
+        <div className="flex flex-wrap gap-2">
+          {ORDER_STATUSES.map((s) => (
+            <button
+              key={s}
+              disabled={s === st}
+              onClick={() => onStatus(order, s)}
+              className={`rounded-lg px-3 py-2 text-[12px] font-semibold transition ${
+                s === st ? "bg-[#06214a] text-white" : "bg-[#eef2fb] text-[#16335f] hover:bg-[#e1e8f7]"
+              }`}
+            >
+              {STATUS_LABEL[s]}
+            </button>
+          ))}
         </div>
-        <Btn variant="soft" size="sm" className="mt-2" onClick={() => setLines((a) => [...a, { productId: db.products[0]?.id ?? "", qty: 1 }])}>
-          <Plus size={14} /> Mahsulot qo&apos;shish
-        </Btn>
       </div>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-3">
-        <Field label="Yetkazib berish narxi (UZS)">
-          <input type="number" min={0} className={inputCls} value={delivery || ""} onChange={(e) => setDelivery(+e.target.value || 0)} placeholder="0" />
-        </Field>
-        <Field label="To'lov usuli">
-          <select className={inputCls} value={payMethod} onChange={(e) => setPayMethod(e.target.value as PayMethod)}>
-            {["Bank o'tkazmasi", "Payme", "Click", "Uzum", "Naqd"].map((m) => (
-              <option key={m}>{m}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="To'lov holati">
-          <select className={inputCls} value={paid ? "1" : "0"} onChange={(e) => setPaid(e.target.value === "1")}>
-            <option value="0">Kutilmoqda</option>
-            <option value="1">To&apos;langan</option>
-          </select>
-        </Field>
+      <div className="mt-5">
+        <div className="mb-2 text-[12px] font-medium text-[#4a5a73]">Buyurtma tarkibi</div>
+        {details ? (
+          <>
+            <ul className="divide-y divide-[#eef1f6] rounded-lg border border-[#eef1f6]">
+              {details.items.map((i) => (
+                <li key={i.id} className="flex items-center gap-3 px-3 py-2 text-[13px]">
+                  <span className="min-w-0 flex-1 truncate">{i.title}</span>
+                  <span className="text-[#8794aa]">
+                    {i.quantity} × {fmt(i.price)}
+                  </span>
+                  <b>{rub(i.price * i.quantity)}</b>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-[12px] text-[#6b7a90]">
+              {details.customer.firstName} {details.customer.lastName} • {details.customer.phone} • {details.customer.email} • {details.delivery}
+            </p>
+          </>
+        ) : (
+          <p className="rounded-lg bg-[#fff3d9] px-3 py-2.5 text-[12px] text-[#9a6200]">
+            Backend buyurtma tarkibini (mahsulotlar, mijoz ismi, telefon, manzil) saqlamaydi — /api/orders/ faqat raqam, status va summani qaytaradi.
+            To&apos;liq ma&apos;lumot uchun backend&apos;ga order items va kontakt maydonlarini qo&apos;shish kerak.
+          </p>
+        )}
       </div>
+    </Modal>
+  );
+}
 
-      <div className="mt-4 rounded-lg bg-[#f6f8fc] p-3 text-[12px] text-[#4a5a73]">
-        <Row l="Oraliq summa:" v={`${fmt(sub)} UZS`} />
-        <Row l={`Mijoz chegirmasi (${c?.discount ?? 0}%):`} v={`-${fmt(disc)} UZS`} green />
-        <Row l="Yetkazib berish:" v={`+${fmt(delivery)} UZS`} />
+function Info({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg bg-[#f6f8fc] px-3 py-2.5">
+      <div className="text-[11px] uppercase tracking-wide text-[#8794aa]">{label}</div>
+      <div className="mt-1 text-[13px]">{children}</div>
+    </div>
+  );
+}
+
+function CreateOrderModal({ onClose }: { onClose: () => void }) {
+  const [createOrder, { isLoading }] = useCreateOrderMutation();
+  const [number, setNumber] = useState(() => String(Date.now()).slice(-8));
+  const [subtotal, setSubtotal] = useState("");
+  const [total, setTotal] = useState("");
+  const [status, setStatus] = useState<OrderStatus>("pending");
+
+  const save = async () => {
+    const sub = money(subtotal.replace(",", "."));
+    const tot = total.trim() ? money(total.replace(",", ".")) : sub;
+    if (!number.trim()) return toast.error("Buyurtma raqamini kiriting");
+    if (sub <= 0) return toast.error("Summani kiriting");
+    try {
+      await createOrder({ number: number.trim(), status, subtotal: sub.toFixed(2), total: tot.toFixed(2) }).unwrap();
+      toast.success("Buyurtma qo'shildi");
+      onClose();
+    } catch (err) {
+      toastApiError(err);
+    }
+  };
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Qo'lda buyurtma qo'shish"
+      subtitle="Telefon yoki do'kondan kelgan buyurtmani ro'yxatga kiritish"
+      footer={
+        <>
+          <Btn variant="soft" onClick={onClose}>
+            Bekor qilish
+          </Btn>
+          <Btn variant="dark" onClick={save} disabled={isLoading}>
+            {isLoading ? "Saqlanmoqda..." : "Saqlash"}
+          </Btn>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Buyurtma raqami *">
+            <input className={inputCls} value={number} onChange={(e) => setNumber(e.target.value)} />
+          </Field>
+          <Field label="Status">
+            <select className={inputCls} value={status} onChange={(e) => setStatus(e.target.value as OrderStatus)}>
+              {ORDER_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_LABEL[s]}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label={`Summa (${CURRENCY}) *`}>
+            <input className={inputCls} inputMode="decimal" value={subtotal} onChange={(e) => setSubtotal(e.target.value)} placeholder="0" />
+          </Field>
+          <Field label={`Jami, chegirma bilan (${CURRENCY})`} hint="Bo'sh qolsa summaga teng">
+            <input className={inputCls} inputMode="decimal" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="—" />
+          </Field>
+        </div>
       </div>
     </Modal>
   );

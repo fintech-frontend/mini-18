@@ -2,97 +2,148 @@
 
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
-import { actions, uid, useDB, type Staff } from "@/lib/admin/db";
-import { Avatar } from "@/components/admin/shared";
-import { Badge, Btn, Card, Confirm, Field, inputCls, Modal, PageHeader } from "@/components/admin/ui";
+import { KeyRound, UserCog } from "lucide-react";
+import { Btn, Card, Field, inputCls, PageHeader } from "@/components/admin/ui";
+import { ApiMissing, Avatar } from "@/components/admin/shared";
+import { useChangePasswordMutation, useGetProfileQuery, useUpdateProfileMutation } from "@/lib/api/userApi";
+import { fmtDate } from "@/lib/admin/format";
+import { formatApiError } from "@/lib/apiError";
+import { toastApiError } from "@/lib/admin/notify";
 
-const ROLES: Staff["role"][] = ["Bosh Admin", "Menejer", "Omborchi", "Logist"];
-const blank = (): Staff => ({ id: uid("s"), name: "", email: "", role: "Menejer", active: true });
+const s = (v: unknown) => (v === null || v === undefined ? "" : String(v));
 
 export default function SettingsPage() {
-  const db = useDB();
-  const [edit, setEdit] = useState<Staff | null>(null);
-  const [del, setDel] = useState<Staff | null>(null);
-  const [reset, setReset] = useState(false);
+  const { data: profile, isLoading, error } = useGetProfileQuery();
 
   return (
     <>
-      <PageHeader
-        crumbs={["Tizim", "Sozlamalar va Xodimlar"]}
-        title="Sozlamalar va Xodimlar"
-        subtitle="Admin panelga kirish huquqiga ega xodimlar"
-        actions={
-          <Btn variant="dark" onClick={() => setEdit(blank())}>
-            <Plus size={16} /> Yangi xodim
-          </Btn>
-        }
-      />
-      <Card>
-        <div className="divide-y divide-[#eef1f6]">
-          {db.staff.map((s) => (
-            <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 py-3.5">
-              <div className="flex items-center gap-3">
-                <Avatar name={s.name} className="!rounded-full" />
-                <div>
-                  <div className="text-[14px] font-semibold">{s.name}</div>
-                  <div className="text-[12px] text-[#6b7a90]">{s.email}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge tone="blue">{s.role}</Badge>
-                <button onClick={() => actions.saveStaff({ ...s, active: !s.active })}>
-                  <Badge tone={s.active ? "green" : "gray"}>{s.active ? "Faol" : "Bloklangan"}</Badge>
-                </button>
-                <Btn size="sm" variant="soft" onClick={() => setEdit(s)} aria-label="Tahrirlash"><Pencil size={13} /></Btn>
-                <Btn size="sm" variant="danger" disabled={s.role === "Bosh Admin" && db.staff.filter((x) => x.role === "Bosh Admin").length === 1} onClick={() => setDel(s)} aria-label="O'chirish"><Trash2 size={13} /></Btn>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
+      <PageHeader crumbs={["Asosiy", "Sozlamalar"]} title="Sozlamalar va Xodimlar" subtitle="Joriy admin profili (/api/auth/profile/) va parol." />
 
-      <Card className="mt-4" title="Demo ma'lumotlar" subtitle="Barcha mahsulot, buyurtma va mijozlarni boshlang'ich holatga qaytarish (faqat shu brauzerda saqlanadi)">
-        <Btn variant="danger" onClick={() => setReset(true)}>
-          <RotateCcw size={15} /> Ma&apos;lumotlarni tiklash
-        </Btn>
-      </Card>
+      {error && <p className="mb-4 rounded-lg bg-[#fdecec] px-4 py-3 text-[13px] text-[#c0262d]">Profilni yuklab bo&apos;lmadi: {formatApiError(error)}</p>}
 
-      {edit && <StaffModal key={edit.id} staff={edit} onClose={() => setEdit(null)} />}
-      <Confirm open={!!del} title="Xodimni o'chirish" text={`${del?.name} tizimga kirish huquqidan mahrum qilinadi.`} onClose={() => setDel(null)} onYes={() => { if (del) { actions.deleteStaff(del.id); toast.success("Xodim o'chirildi"); } }} />
-      <Confirm open={reset} title="Ma'lumotlarni tiklash" text="Barcha o'zgarishlar o'chib, demo ma'lumotlar qayta yuklanadi." yes="Ha, tiklash" onClose={() => setReset(false)} onYes={() => { actions.resetDemo(); toast.success("Demo ma'lumotlar tiklandi"); }} />
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card title="Mening profilim" action={<UserCog size={18} className="text-[#186FD4]" />}>
+          {isLoading ? (
+            <p className="py-8 text-center text-[13px] text-[#6b7a90]">Yuklanmoqda...</p>
+          ) : profile ? (
+            <ProfileForm key={s(profile.id)} profile={profile} />
+          ) : null}
+        </Card>
+
+        <Card title="Parolni almashtirish" action={<KeyRound size={18} className="text-[#186FD4]" />}>
+          <PasswordForm />
+        </Card>
+      </div>
+
+      <Card className="mt-4" title="Xodimlar va rollar">
+        <ApiMissing
+          title="Xodimlar ro'yxati uchun API yo'q"
+          text="Backend xodimlar, rollar va ruxsatlarni boshqarish uchun endpoint bermaydi. Hozircha xodim qo'shish va admin huquqini (is_staff) berish Django admin panelida qilinadi."
+          endpoint="GET/POST /api/staff/  (faqat admin uchun)"
+        />
+      </Card>
     </>
   );
 }
 
-function StaffModal({ staff, onClose }: { staff: Staff; onClose: () => void }) {
-  const db = useDB();
-  const [f, setF] = useState(staff);
-  const save = () => {
-    if (!f.name.trim()) return toast.error("Ismni kiriting");
-    if (!/^\S+@\S+\.\S+$/.test(f.email)) return toast.error("Email noto'g'ri");
-    if (db.staff.some((s) => s.email.toLowerCase() === f.email.toLowerCase() && s.id !== f.id)) return toast.error("Bu email band");
-    actions.saveStaff({ ...f, name: f.name.trim() });
-    toast.success("Xodim saqlandi");
-    onClose();
+function ProfileForm({ profile }: { profile: Record<string, unknown> }) {
+  const [updateProfile, { isLoading }] = useUpdateProfileMutation();
+  const [firstName, setFirstName] = useState(s(profile.first_name));
+  const [lastName, setLastName] = useState(s(profile.last_name));
+  const [phone, setPhone] = useState(s(profile.phone));
+  const name = [firstName, lastName].filter(Boolean).join(" ") || s(profile.email);
+
+  const save = async () => {
+    try {
+      await updateProfile({ first_name: firstName.trim(), last_name: lastName.trim(), phone: phone.trim() }).unwrap();
+      toast.success("Profil saqlandi");
+    } catch (err) {
+      toastApiError(err);
+    }
   };
+
   return (
-    <Modal open onClose={onClose} title="Xodim" footer={<><Btn variant="soft" onClick={onClose}>Bekor qilish</Btn><Btn variant="dark" onClick={save}>Saqlash</Btn></>}>
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <Avatar name={name} className="!h-12 !w-12" />
+        <div>
+          <div className="font-semibold">{name}</div>
+          <div className="text-[12px] text-[#6b7a90]">
+            {s(profile.email)}
+            {profile.created_at ? ` • ${fmtDate(new Date(s(profile.created_at)).getTime())} dan beri` : ""}
+          </div>
+        </div>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="To'liq ism *"><input className={inputCls} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
-        <Field label="Email *"><input className={inputCls} value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
-        <Field label="Lavozim">
-          <select className={inputCls} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value as Staff["role"] })}>
-            {ROLES.map((r) => <option key={r}>{r}</option>)}
-          </select>
+        <Field label="Ism">
+          <input className={inputCls} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
         </Field>
-        <Field label="Holat">
-          <select className={inputCls} value={f.active ? "1" : "0"} onChange={(e) => setF({ ...f, active: e.target.value === "1" })}>
-            <option value="1">Faol</option>
-            <option value="0">Bloklangan</option>
-          </select>
+        <Field label="Familiya">
+          <input className={inputCls} value={lastName} onChange={(e) => setLastName(e.target.value)} />
         </Field>
       </div>
-    </Modal>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Email" hint="Email'ni o'zgartirib bo'lmaydi">
+          <input className={`${inputCls} opacity-70`} value={s(profile.email)} readOnly />
+        </Field>
+        <Field label="Telefon">
+          <input className={inputCls} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998 90 123 45 67" />
+        </Field>
+      </div>
+      <div className="flex justify-end">
+        <Btn variant="dark" onClick={save} disabled={isLoading}>
+          {isLoading ? "Saqlanmoqda..." : "Saqlash"}
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
+function PasswordForm() {
+  const [changePassword, { isLoading }] = useChangePasswordMutation();
+  const [oldPassword, setOld] = useState("");
+  const [newPassword, setNew] = useState("");
+  const [confirm, setConfirm] = useState("");
+
+  const save = async () => {
+    if (!oldPassword || !newPassword) return toast.error("Parollarni kiriting");
+    if (newPassword.length < 8) return toast.error("Yangi parol kamida 8 belgidan iborat bo'lishi kerak");
+    if (newPassword !== confirm) return toast.error("Yangi parollar mos kelmadi");
+    try {
+      await changePassword({
+        old_password: oldPassword,
+        new_password: newPassword,
+        new_password_confirm: confirm,
+        confirm_password: confirm,
+        password_confirm: confirm,
+      }).unwrap();
+      toast.success("Parol almashtirildi");
+      setOld("");
+      setNew("");
+      setConfirm("");
+    } catch (err) {
+      toastApiError(err);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Field label="Joriy parol">
+        <input type="password" autoComplete="current-password" className={inputCls} value={oldPassword} onChange={(e) => setOld(e.target.value)} />
+      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Yangi parol" hint="Kamida 8 belgi">
+          <input type="password" autoComplete="new-password" className={inputCls} value={newPassword} onChange={(e) => setNew(e.target.value)} />
+        </Field>
+        <Field label="Yangi parolni takrorlang">
+          <input type="password" autoComplete="new-password" className={inputCls} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+        </Field>
+      </div>
+      <div className="flex justify-end">
+        <Btn variant="dark" onClick={save} disabled={isLoading}>
+          {isLoading ? "Saqlanmoqda..." : "Parolni almashtirish"}
+        </Btn>
+      </div>
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Building2, Eye, EyeOff, Lock, ShieldCheck, User } from "lucide-react";
 import { useDispatch } from "react-redux";
@@ -30,6 +30,14 @@ export default function AdminLogin() {
   const [show, setShow] = useState(false);
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // AdminShell token topmaganda shu yerga ?expired=1 bilan qaytaradi
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("expired")) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setError("Sessiya muddati tugadi. Iltimos, qaytadan kiring.");
+    }
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

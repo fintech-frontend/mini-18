@@ -1,10 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Toaster } from "react-hot-toast";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/lib/store";
 import {
   BarChart3,
   Bell,
@@ -27,7 +28,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useAdminSession, adminLogout } from "@/lib/admin/auth";
-import { useDB, DAY, useNow } from "@/lib/admin/db";
+import { useGetAdminOrdersQuery, useGetAdminProductsQuery } from "@/lib/api/adminApi";
+import { DAY, statusOf } from "@/lib/admin/orders";
 import { fmtDay } from "@/lib/admin/format";
 
 const NAV = [
@@ -36,9 +38,13 @@ const NAV = [
     href: "/admin/products",
     label: "Mahsulotlar",
     icon: Archive,
+    // Bu yo'llarda ham "Mahsulotlar" bo'limi faol hisoblanadi
+    match: ["/admin/products", "/admin/categories", "/admin/brands"],
     children: [
       { href: "/admin/products", label: "Katalog" },
-      { href: "/admin/products?filter=low", label: "Kam qolganlar" },
+      { href: "/admin/categories", label: "Kategoriyalar" },
+      { href: "/admin/brands", label: "Brendlar" },
+      { href: "/admin/products?filter=out", label: "Sotuvda yo'q" },
     ],
   },
   { href: "/admin/orders", label: "Buyurtmalar", icon: ShoppingCart, badge: true },
@@ -65,20 +71,32 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
   const session = useAdminSession();
-  const db = useDB();
+  const { token, hydrated } = useSelector((state: RootState) => state.auth);
   const [open, setOpen] = useState(false);
   const [sub, setSub] = useState(true);
 
   const isLogin = pathname === "/admin/login";
 
+  // JWT token yo'q (muddati tugagan, saytda logout qilingan) — admin sessiyasi ham yopiladi,
+  // aks holda panel ochiq ko'rinadi-yu, API so'rovlari tokensiz ketadi
+  const tokenMissing = hydrated && !token;
+  const expiredRef = useRef(false);
+
   useEffect(() => {
     if (session === undefined) return;
-    if (!session && !isLogin) router.replace("/admin/login");
+    if (session && tokenMissing) {
+      expiredRef.current = true;
+      adminLogout(); // keyingi renderda session=null bo'ladi va pastdagi shart ishlaydi
+      return;
+    }
+    if (!session && !isLogin) router.replace(expiredRef.current ? "/admin/login?expired=1" : "/admin/login");
     if (session && isLogin) router.replace("/admin");
-  }, [session, isLogin, router]);
+  }, [session, isLogin, tokenMissing, router]);
 
 
-  const newOrders = db.orders.filter((o) => o.status === "new").length;
+  // Yon menyudagi "Buyurtmalar" yonidagi son — yangi (ko'rilmagan) buyurtmalar
+  const { data: orders = [] } = useGetAdminOrdersQuery(undefined, { skip: isLogin || !session || tokenMissing });
+  const newOrders = orders.filter((o) => statusOf(o) === "pending").length;
 
   if (isLogin) {
     return (
@@ -88,19 +106,32 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       </>
     );
   }
-  if (!session) {
+  if (!session || tokenMissing) {
     return <div className="flex min-h-screen items-center justify-center bg-[#f4f6fb] text-[13px] text-[#6b7a90]">Yuklanmoqda…</div>;
   }
 
   const sidebar = (
     <aside className="flex h-full w-[260px] shrink-0 flex-col bg-[#186FD4] text-white">
-      <Link href="/admin" className="m-4 mb-3 flex items-center justify-center rounded-xl bg-white px-3 py-3">
-        <Image src="/logo.png" alt="Стройоптторг" width={215} height={54} priority className="h-auto w-full max-w-[200px]" />
+      {/* Saytdagi header logosi: ikonka oq doirada asl ranglarida, yozuv ko'k panel ustida oq */}
+      <Link href="/admin" aria-label="Стройоптторг — boshqaruv paneli" className="mx-3 mb-4 mt-5 flex items-center gap-2.5 rounded-xl px-2 py-2 transition hover:bg-white/10">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+          <svg viewBox="0 0 100 100" className="h-8 w-8" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="50" cy="50" r="44" stroke="#D93829" strokeWidth="8" />
+            <path d="M30 68V48L50 32L70 48V68H30Z" fill="#1B365D" />
+            <path d="M22 48L50 25L78 48" stroke="#D93829" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+        <span className="flex min-w-0 flex-col">
+          <span className="whitespace-nowrap text-[18px] font-black uppercase leading-none tracking-tight">Стройоптторг</span>
+          <span className="mt-1.5 whitespace-nowrap text-[8px] font-bold uppercase leading-none tracking-wide text-white/75">Всё для строительства и ремонта</span>
+        </span>
       </Link>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-4">
         {NAV.map((n) => {
-          const active = n.exact ? pathname === n.href : pathname.startsWith(n.href);
+          const active = n.exact
+            ? pathname === n.href
+            : (n.match ?? [n.href]).some((m) => pathname.startsWith(m));
           const Icon = n.icon;
           return (
             <div key={n.href}>
@@ -173,7 +204,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
 function TopBar({ onMenu }: { onMenu: () => void }) {
   const router = useRouter();
-  const db = useDB();
   const session = useAdminSession();
   const [q, setQ] = useState("");
   const [sr, setSr] = useState(false);
@@ -201,29 +231,35 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
     return () => document.removeEventListener("keydown", h);
   }, []);
 
-  const results = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (s.length < 2) return [];
-    const out: { label: string; sub: string; href: string }[] = [];
-    db.products
-      .filter((p) => (p.name + p.sku).toLowerCase().includes(s))
-      .slice(0, 4)
-      .forEach((p) => out.push({ label: p.name, sub: `Mahsulot • ${p.sku}`, href: `/admin/products?q=${encodeURIComponent(p.sku)}` }));
-    db.orders
-      .filter((o) => (o.number + o.customerName).toLowerCase().includes(s))
-      .slice(0, 4)
-      .forEach((o) => out.push({ label: `#${o.number}`, sub: `Buyurtma • ${o.customerName}`, href: `/admin/orders?q=${encodeURIComponent(o.number)}` }));
-    db.customers
-      .filter((c) => (c.company + c.inn + c.phone).toLowerCase().includes(s))
-      .slice(0, 4)
-      .forEach((c) => out.push({ label: c.company, sub: `Mijoz • ${c.phone}`, href: `/admin/customers?q=${encodeURIComponent(c.company.replace(/"/g, ""))}` }));
-    return out;
-  }, [q, db]);
+  // Qidiruv: mahsulotlar — API qidiruvi, buyurtmalar — raqam bo'yicha
+  const [term, setTerm] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setTerm(q.trim()), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+  const { data: found } = useGetAdminProductsQuery({ search: term, page_size: 5 }, { skip: term.length < 2 });
+  const { data: orders = [] } = useGetAdminOrdersQuery();
+  const { data: outOfStock } = useGetAdminProductsQuery({ in_stock: false, page_size: 5 });
 
-  const low = db.products.filter((p) => p.stock <= p.minStock);
-  const fresh = db.orders.filter((o) => o.status === "new");
-  const now = useNow();
-  const alerts = low.length + fresh.length;
+  const results = useMemo(() => {
+    const sq = term.toLowerCase().replace(/^#/, "");
+    if (sq.length < 2) return [];
+    const out: { label: string; sub: string; href: string }[] = [];
+    (found?.results ?? []).forEach((p) =>
+      out.push({ label: p.name, sub: `Mahsulot • ${p.article}`, href: `/admin/products?q=${encodeURIComponent(p.article)}` })
+    );
+    orders
+      .filter((o) => o.number.toLowerCase().includes(sq))
+      .slice(0, 4)
+      .forEach((o) => out.push({ label: `#${o.number}`, sub: "Buyurtma", href: `/admin/orders?q=${encodeURIComponent(o.number)}` }));
+    return out;
+  }, [term, found, orders]);
+
+  const low = outOfStock?.results ?? [];
+  const lowCount = outOfStock?.count ?? 0;
+  const fresh = orders.filter((o) => statusOf(o) === "pending");
+  const [now] = useState(() => Date.now());
+  const alerts = lowCount + fresh.length;
 
   return (
     <header className="sticky top-0 z-30 flex items-center gap-3 bg-white/95 px-4 py-3 shadow-[0_1px_0_#e8edf5] backdrop-blur sm:px-6">
@@ -241,11 +277,11 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
             setSr(true);
           }}
           onFocus={() => setSr(true)}
-          placeholder="Mahsulot, buyurtma #, mijoz yoki SKU qidirish..."
+          placeholder="Mahsulot, artikul yoki buyurtma # qidirish..."
           className="w-full rounded-lg border border-transparent bg-[#f4f6fb] py-2.5 pl-9 pr-14 text-[13px] outline-none focus:border-[#186FD4] focus:bg-white"
         />
         <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded bg-[#e6ebf4] px-1.5 py-0.5 text-[10px] text-[#6b7a90] sm:block">⌘K</kbd>
-        {sr && q.trim().length >= 2 && (
+        {sr && term.length >= 2 && (
           <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-80 overflow-y-auto rounded-xl bg-white p-2 shadow-2xl ring-1 ring-black/5">
             {results.length === 0 ? (
               <div className="p-4 text-center text-[13px] text-[#8794aa]">Hech narsa topilmadi</div>
@@ -286,9 +322,9 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
             <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl bg-white p-2 shadow-2xl ring-1 ring-black/5">
               {[
                 ["Yangi mahsulot", "/admin/products?new=1"],
-                ["Yangi buyurtma", "/admin/orders?new=1"],
-                ["Yangi mijoz", "/admin/customers?new=1"],
-                ["Xarid buyurtmasi", "/admin/warehouse?new=1"],
+                ["Yangi kategoriya", "/admin/categories"],
+                ["Qo'lda buyurtma", "/admin/orders?new=1"],
+                ["Aksiya / yangilik", "/admin/marketing"],
               ].map(([l, h]) => (
                 <button
                   key={l}
@@ -323,18 +359,18 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
                   <ShoppingCart size={16} className="mt-0.5 text-[#186FD4]" />
                   <div>
                     <div className="text-[13px] font-medium">Yangi buyurtma #{o.number}</div>
-                    <div className="text-[11px] text-[#8794aa]">{o.customerName}</div>
+                    <div className="text-[11px] text-[#8794aa]">
+                      {fmtDay(new Date(o.created_at).getTime())} • {Number(o.total).toLocaleString("ru-RU")} ₽
+                    </div>
                   </div>
                 </Link>
               ))}
               {low.slice(0, 5).map((p) => (
-                <Link key={p.id} href={`/admin/products?q=${p.sku}`} onClick={() => setBell(false)} className="flex gap-3 rounded-lg px-3 py-2 hover:bg-[#f1f4fa]">
+                <Link key={p.id} href={`/admin/products?q=${encodeURIComponent(p.article)}`} onClick={() => setBell(false)} className="flex gap-3 rounded-lg px-3 py-2 hover:bg-[#f1f4fa]">
                   <AlertTriangle size={16} className="mt-0.5 text-[#c0262d]" />
                   <div>
-                    <div className="text-[13px] font-medium">Zaxira kam: {p.name}</div>
-                    <div className="text-[11px] text-[#8794aa]">
-                      Qoldiq: {p.stock} {p.unit} • Min: {p.minStock}
-                    </div>
+                    <div className="text-[13px] font-medium">Sotuvda yo&apos;q: {p.name}</div>
+                    <div className="text-[11px] text-[#8794aa]">Artikul: {p.article} • Qoldiq: 0</div>
                   </div>
                 </Link>
               ))}
