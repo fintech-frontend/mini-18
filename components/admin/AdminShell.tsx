@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Toaster } from "react-hot-toast";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/lib/store";
 import {
   BarChart3,
@@ -28,7 +28,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useAdminSession, adminLogout } from "@/lib/admin/auth";
-import { useGetAdminOrdersQuery, useGetAdminProductsQuery } from "@/lib/api/adminApi";
+import { adminApi, useGetAdminOrdersQuery, useGetAdminProductsQuery } from "@/lib/api/adminApi";
+import { logout } from "@/lib/authSlice";
 import { DAY, statusOf } from "@/lib/admin/orders";
 import { fmtDay } from "@/lib/admin/format";
 
@@ -204,6 +205,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
 function TopBar({ onMenu }: { onMenu: () => void }) {
   const router = useRouter();
+  const dispatch = useDispatch();
   const session = useAdminSession();
   const [q, setQ] = useState("");
   const [sr, setSr] = useState(false);
@@ -399,6 +401,9 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
               </Link>
               <button
                 onClick={() => {
+                  // To'liq chiqish: admin sessiyasi ham, JWT token ham tozalanadi
+                  dispatch(logout());
+                  dispatch(adminApi.util.resetApiState());
                   adminLogout();
                   router.replace("/admin/login");
                 }}

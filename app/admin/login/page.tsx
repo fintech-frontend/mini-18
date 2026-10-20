@@ -39,17 +39,22 @@ export default function AdminLogin() {
     }
   }, []);
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
-    if (!email.trim() || !password) return setError("Email va parolni kiriting");
+    // Chrome avto-to'ldirgan qiymatlar React holatiga tushmay qolishi mumkin —
+    // shuning uchun formaning o'zidan o'qiymiz
+    const fd = new FormData(e.currentTarget);
+    const login = String(fd.get("email") ?? email).trim();
+    const pass = String(fd.get("password") ?? password);
+    if (!login || !pass) return setError("Email va parolni kiriting");
     try {
-      const res = await loginUser({ username: email.trim(), email: email.trim(), password }).unwrap();
+      const res = await loginUser({ username: login, email: login, password: pass }).unwrap();
       const token = findString(res, ["access", "access_token", "accessToken", "token", "key"]);
       const refresh = findString(res, ["refresh", "refresh_token", "refreshToken"]);
       if (!token) return setError("Server token qaytarmadi");
       dispatch(setToken({ token, refresh, remember: true }));
-      startAdminSession(email.trim().toLowerCase());
+      startAdminSession(login.toLowerCase());
       router.replace("/admin");
     } catch (err) {
       setError(formatApiError(err));
@@ -125,6 +130,7 @@ export default function AdminLogin() {
               <div className="relative">
                 <User size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8794aa]" />
                 <input
+                  name="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="username"
@@ -141,6 +147,7 @@ export default function AdminLogin() {
               <div className="relative">
                 <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8794aa]" />
                 <input
+                  name="password"
                   type={show ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
