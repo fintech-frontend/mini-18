@@ -329,6 +329,10 @@ export default function FooterWithMenu() {
                 Политика конфиденциальности
               </Link>
 
+              <Link href="/photo-credits" className="underline hover:text-gray-600 transition-colors">
+                Источники фото
+              </Link>
+
               <a
                 href="https://readycode.ru"
                 target="_blank"
