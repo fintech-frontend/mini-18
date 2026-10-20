@@ -4,7 +4,8 @@
  */
 
 export const API_URL = (
-  process.env.NEXT_PUBLIC_API_URL ??
+  // Bo'sh qiymat (NEXT_PUBLIC_API_URL=) ham standart manzilga tushadi
+  process.env.NEXT_PUBLIC_API_URL ||
   "https://fixingtools.pythonanywhere.com/api/v1"
 ).replace(/\/+$/, "");
 
@@ -12,6 +13,8 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** Server javobi (masalan, 400 da maydon xatolari: { name: ["..."] }) */
+    public data?: unknown,
   ) {
     super(message);
     this.name = "ApiError";
@@ -62,4 +65,21 @@ export async function apiGet<T>(
 /** Ro'yxat ba'zan sahifalangan {results}, ba'zan oddiy massiv keladi */
 export function toList<T>(data: T[] | { results: T[] }): T[] {
   return Array.isArray(data) ? data : data.results;
+}
+
+/** multipart/form-data POST (fayl yuklash uchun). Content-Type'ni brauzer o'zi qo'yadi. */
+export async function apiPostForm<T>(path: string, body: FormData): Promise<T> {
+  const response = await fetch(buildUrl(path), {
+    method: "POST",
+    headers: { Accept: "application/json" },
+    body,
+  });
+
+  const data: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(response.status, `API ${response.status}: ${path}`, data);
+  }
+
+  return data as T;
 }

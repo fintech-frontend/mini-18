@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import PromoBanners from "@/components/catalog/PromoBanners";
 import ReviewForm from "@/components/reviews/ReviewForm";
 import ReviewsList from "@/components/reviews/ReviewsList";
 import SubscribeCard from "@/components/reviews/SubscribeCard";
+import LoadingState from "@/components/ui/LoadingState";
 import { styles } from "@/styles/index.styles";
 
 export const metadata: Metadata = {
@@ -35,7 +37,10 @@ export default function ReviewsPage() {
       <div className="mt-5 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-x-5 xl:grid-cols-[minmax(0,1fr)_331px]">
         {/* Asosiy qism */}
         <div className="min-w-0">
-          <ReviewsList />
+          {/* Saralash va sahifa URL'da (useSearchParams) — Suspense ichida bo'lishi shart */}
+          <Suspense fallback={<LoadingState label="Загрузка отзывов..." />}>
+            <ReviewsList />
+          </Suspense>
 
           <section
             aria-labelledby="review-form-title"

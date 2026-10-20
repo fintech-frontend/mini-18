@@ -1,20 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 
 import ActiveFilterChips, {
   type FilterChip,
 } from "@/components/catalog/ActiveFilterChips";
 import CatalogFilters from "@/components/catalog/CatalogFilters";
-import CatalogPagination from "@/components/catalog/CatalogPagination";
 import CatalogSeoText from "@/components/catalog/CatalogSeoText";
 import CatalogToolbar from "@/components/catalog/CatalogToolbar";
 import FiltersDrawer from "@/components/catalog/FiltersDrawer";
 import ProductCard from "@/components/catalog/ProductCard";
 import PromoBanners from "@/components/catalog/PromoBanners";
 import LoadingState from "@/components/ui/LoadingState";
+import Pagination from "@/components/ui/Pagination";
 import { useFilterOptions, useProductPage } from "@/hooks/useCatalogData";
 import { useCatalogQuery } from "@/hooks/useCatalogQuery";
 import { sortByDiscount, toProductParams } from "@/lib/api/catalog";
@@ -158,7 +158,12 @@ function CatalogContent({
     () => toProductParams(query, options, category?.slug),
     [query, options, category?.slug],
   );
-  const { data, isLoading, isError, retry } = useProductPage(params);
+  const { data, isLoading, isError, isPageNotFound, retry } = useProductPage(params);
+
+  // Havoladagi sahifa endi mavjud emas (mahsulotlar kamaygan) — 1-sahifaga qaytamiz
+  useEffect(() => {
+    if (isPageNotFound && query.page > 1) updateQuery({ ...query, page: 1 });
+  }, [isPageNotFound, query, updateQuery]);
 
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const productsTopRef = useRef<HTMLDivElement>(null);
@@ -305,7 +310,7 @@ function CatalogContent({
         </div>
 
         <div className="mt-5 md:mt-[15px] lg:mt-[60px]">
-          <CatalogPagination
+          <Pagination
             page={currentPage}
             totalPages={totalPages}
             onChange={changePage}

@@ -7,14 +7,14 @@ const BANNERS = [
   {
     title: "Все для отопления",
     label: "до -30%",
-    image: "/images/reviews/rectangle-32.png",
+    image: "/images/promo/heating.png",
     bg: "bg-[#F4F1ED]",
     href: "/promotions",
   },
   {
     title: "Лакокрасочные материалы",
     label: "до -30%",
-    image: "/images/reviews/rectangle-31.png",
+    image: "/images/promo/paint.png",
     bg: "bg-[#E8EDF2]",
     href: "/promotions",
   },

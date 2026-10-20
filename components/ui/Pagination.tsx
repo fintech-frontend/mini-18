@@ -105,7 +105,8 @@ function PageList({
   );
 }
 
-export default function CatalogPagination({
+/** Sahifalash: katalog, sharhlar va boshqa ro'yxatlar uchun umumiy */
+export default function Pagination({
   page,
   totalPages,
   onChange,

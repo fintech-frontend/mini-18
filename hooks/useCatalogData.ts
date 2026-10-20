@@ -7,13 +7,13 @@ import {
   fetchProducts,
   type ProductPage,
 } from "@/lib/api/catalog";
-import type { QueryParams } from "@/lib/api/client";
+import { ApiError, type QueryParams } from "@/lib/api/client";
 import { productCache } from "@/lib/api/productCache";
 import type { FilterOptions } from "@/types/productsTypes";
 
 type State<T> =
   | { status: "loading"; key: string }
-  | { status: "error"; key: string }
+  | { status: "error"; key: string; pageNotFound?: boolean }
   | { status: "ready"; key: string; data: T };
 
 /** Kategoriya filtr paneli variantlari (/products/filters/) */
@@ -67,8 +67,11 @@ export function useProductPage(params: QueryParams) {
           setState({ status: "ready", key, data });
           setLastData(data);
         })
-        .catch(() => {
-          if (!controller.signal.aborted) setState({ status: "error", key });
+        .catch((error) => {
+          if (controller.signal.aborted) return;
+          // ?page=5, lekin sahifalar kamroq — API 404 "Invalid page" qaytaradi
+          const pageNotFound = error instanceof ApiError && error.status === 404;
+          setState({ status: "error", key, pageNotFound });
         });
     }, DEBOUNCE_MS);
 
@@ -84,6 +87,7 @@ export function useProductPage(params: QueryParams) {
     data: isCurrent && state.status === "ready" ? state.data : lastData,
     isLoading: !isCurrent || state.status === "loading",
     isError: isCurrent && state.status === "error",
+    isPageNotFound: isCurrent && state.status === "error" && !!state.pageNotFound,
     retry: () => {
       setState({ status: "loading", key });
       setAttempt((n) => n + 1);

@@ -245,7 +245,8 @@ function CheckboxList({
             onChange={() => onToggle(item.value)}
             className="py-[3px]"
           >
-            {item.value}{" "}
+            {/* Tur / brend: slug emas, nomi ("MAKITA", "Перфоратор") */}
+            {item.label ?? item.value}{" "}
             <span className="text-[#A0A5AC]">({item.count})</span>
           </Checkbox>
         ))}

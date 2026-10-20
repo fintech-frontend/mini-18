@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { ImageIcon, X } from "lucide-react";
 
-import { REVIEW_PHOTO_LIMITS } from "@/data/reviewsData";
+import { REVIEW_PHOTO_LIMITS } from "@/data/reviewsConfig";
 import { cn } from "@/lib/utils";
 
 export type UploadedPhoto = {

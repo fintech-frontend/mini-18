@@ -78,3 +78,14 @@ export type ApiReview = {
   text: string;
   created_at: string;
 };
+
+/** Do'kon haqidagi sharh — /store-reviews/ (mahsulot sharhi emas) */
+export type ApiStoreReview = {
+  id: number;
+  name: string;
+  text: string;
+  /** To'liq manzillar */
+  images: string[];
+  is_approved: boolean;
+  created_at: string;
+};

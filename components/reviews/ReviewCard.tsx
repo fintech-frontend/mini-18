@@ -1,9 +1,9 @@
 import Image from "next/image";
 
-import type { Review } from "@/data/reviewsData";
+import type { StoreReview } from "@/types/reviewTypes";
 
 type Props = {
-  review: Review;
+  review: StoreReview;
   onOpenPhoto: (images: string[], index: number, author: string) => void;
 };
 
@@ -15,24 +15,28 @@ export default function ReviewCard({ review, onOpenPhoto }: Props) {
         <h3 className="text-[18px] leading-[26px] font-semibold text-[#2C333D] lg:font-medium">
           {review.name}
         </h3>
-        <time className="text-[14px] leading-[26px] text-[#8A9098] md:text-[15px]">
+        <time
+          dateTime={review.createdAt}
+          className="text-[14px] leading-[26px] text-[#8A9098] md:text-[15px]"
+        >
           {review.date}
         </time>
       </header>
 
-      <p className="text-[15px] leading-[26px] text-[#2C333D] md:text-[16px]">
+      {/* whitespace-pre-line: foydalanuvchi qo'ygan qator tashlashlar saqlanadi */}
+      <p className="text-[15px] leading-[26px] whitespace-pre-line text-[#2C333D] md:text-[16px]">
         {review.text}
       </p>
 
-      {review.images && review.images.length > 0 && (
+      {review.images.length > 0 && (
         <ul className="mt-2.5 flex flex-wrap gap-2.5">
           {review.images.map((src, index) => (
             <li key={src}>
               <button
                 type="button"
-                onClick={() => onOpenPhoto(review.images!, index, review.name)}
+                onClick={() => onOpenPhoto(review.images, index, review.name)}
                 aria-label={`Открыть фото ${index + 1} от ${review.name}`}
-                className="group relative block h-[75px] w-[133px] overflow-hidden rounded-[4px] focus-visible:ring-2 focus-visible:ring-[#186FD4] focus-visible:outline-none lg:h-[111px] lg:w-[197px]"
+                className="group relative block h-[75px] w-[133px] overflow-hidden rounded-[4px] bg-[#F5F7F9] focus-visible:ring-2 focus-visible:ring-[#186FD4] focus-visible:outline-none lg:h-[111px] lg:w-[197px]"
               >
                 <Image
                   src={src}

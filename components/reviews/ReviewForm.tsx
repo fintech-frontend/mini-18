@@ -11,19 +11,22 @@ import {
   inputClassName,
   isValidEmail,
 } from "@/components/ui/FormField";
+import {
+  REVIEW_NAME_MAX_LENGTH,
+  REVIEW_TEXT_MAX_LENGTH,
+  REVIEW_TEXT_MIN_LENGTH,
+} from "@/data/reviewsConfig";
+import { createStoreReview, ReviewSubmitError } from "@/lib/api/storeReviews";
 import { cn } from "@/lib/utils";
+import type { ReviewFormField, ReviewFormValues } from "@/types/reviewTypes";
 import PhotoUpload, { type UploadedPhoto } from "./PhotoUpload";
 
-type Values = {
-  name: string;
-  email: string;
-  text: string;
-};
+type Values = ReviewFormValues;
 
-type Errors = Partial<Record<keyof Values | "consent", string>>;
+type Errors = Partial<Record<ReviewFormField | "consent", string>>;
 
 const EMPTY: Values = { name: "", email: "", text: "" };
-const MIN_TEXT_LENGTH = 10;
+const MIN_TEXT_LENGTH = REVIEW_TEXT_MIN_LENGTH;
 
 function validate(values: Values, consent: boolean): Errors {
   const errors: Errors = {};
@@ -43,20 +46,16 @@ function validate(values: Values, consent: boolean): Errors {
 }
 
 /**
- * TODO: backend API tayyor bo'lganda shu yerda yuboriladi
- * (FormData: name, email, text, photos[]).
+ * "Оставить отзыв" — /store-reviews/ ga yuboriladi.
+ * Sharh admin tasdiqlaguncha saytda ko'rinmaydi.
  */
-async function submitReview(data: FormData) {
-  void data;
-  await new Promise((resolve) => setTimeout(resolve, 700));
-}
-
 export default function ReviewForm() {
   const [values, setValues] = useState<Values>(EMPTY);
   const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const setField = (key: keyof Values, value: string) => {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -75,14 +74,26 @@ export default function ReviewForm() {
       return;
     }
 
-    const data = new FormData();
-    data.append("name", values.name.trim());
-    data.append("email", values.email.trim());
-    data.append("text", values.text.trim());
-    photos.forEach((photo) => data.append("photos", photo.file));
-
     setStatus("sending");
-    await submitReview(data);
+    setSubmitError(null);
+
+    try {
+      await createStoreReview(
+        values,
+        photos.map((photo) => photo.file),
+      );
+    } catch (error) {
+      setStatus("idle");
+      if (error instanceof ReviewSubmitError) {
+        setErrors(error.fieldErrors);
+        setSubmitError(error.message);
+        const firstServerError = Object.keys(error.fieldErrors)[0];
+        if (firstServerError) document.getElementById(`review-${firstServerError}`)?.focus();
+      } else {
+        setSubmitError("Не удалось отправить отзыв. Попробуйте ещё раз.");
+      }
+      return;
+    }
 
     photos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
     setValues(EMPTY);
@@ -134,6 +145,7 @@ export default function ReviewForm() {
             id="review-name"
             type="text"
             autoComplete="name"
+            maxLength={REVIEW_NAME_MAX_LENGTH}
             placeholder="Введите ваше имя"
             value={values.name}
             onChange={(e) => setField("name", e.target.value)}
@@ -172,7 +184,7 @@ export default function ReviewForm() {
           id="review-text"
           placeholder="Ваш отзыв"
           rows={3}
-          maxLength={2000}
+          maxLength={REVIEW_TEXT_MAX_LENGTH}
           value={values.text}
           onChange={(e) => setField("text", e.target.value)}
           aria-invalid={!!errors.text || undefined}
@@ -182,12 +194,27 @@ export default function ReviewForm() {
             "block min-h-[89px] resize-y py-[18px] leading-[24px]",
           )}
         />
-        <FieldError id="review-text-error" message={errors.text} />
+        <div className="flex items-start justify-between gap-4">
+          <FieldError id="review-text-error" message={errors.text} />
+          <span
+            aria-hidden
+            className="ml-auto shrink-0 pt-1.5 text-[12px] text-[#A0A5AC] tabular-nums"
+          >
+            {values.text.length} / {REVIEW_TEXT_MAX_LENGTH}
+          </span>
+        </div>
       </div>
 
       <div>
         <FieldLabel>Прикрепить фото</FieldLabel>
-        <PhotoUpload photos={photos} onChange={setPhotos} />
+        <PhotoUpload
+          photos={photos}
+          onChange={(next) => {
+            setPhotos(next);
+            if (errors.images) setErrors((prev) => ({ ...prev, images: undefined }));
+          }}
+        />
+        <FieldError id="review-images-error" message={errors.images} />
       </div>
 
       <div className="flex flex-col items-center gap-[30px] lg:flex-row">
@@ -227,6 +254,15 @@ export default function ReviewForm() {
           <FieldError id="review-consent-error" message={errors.consent} />
         </div>
       </div>
+
+      {submitError && (
+        <p
+          role="alert"
+          className="rounded-[7px] border border-[#F3C4BE] bg-[#FFF4F3] px-5 py-[15px] text-[14px] text-[#B4231A]"
+        >
+          {submitError}
+        </p>
+      )}
     </form>
   );
 }
