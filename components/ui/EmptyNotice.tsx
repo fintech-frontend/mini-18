@@ -1,6 +1,6 @@
 import { PackageSearch } from "lucide-react";
 
-export const EmptyState = ({
+export const EmptyNotice = ({
   title = "В этой категории пока нет товаров",
   description = "Попробуйте выбрать другую категорию или загляните позже",
 }: {

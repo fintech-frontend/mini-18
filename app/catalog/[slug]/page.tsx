@@ -1,4 +1,4 @@
-import CatalogView from "@/components/catalog/CatalogView";
+import CatalogListing from "@/components/catalog/CatalogListing";
 
 export default async function CatalogCategoryPage({
   params,
@@ -7,5 +7,5 @@ export default async function CatalogCategoryPage({
 }) {
   const { slug } = await params;
 
-  return <CatalogView key={slug} slug={slug} />;
+  return <CatalogListing key={slug} slug={slug} />;
 }

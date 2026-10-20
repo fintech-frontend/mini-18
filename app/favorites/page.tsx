@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { styles } from "@/styles/index.styles";
 import ProductCard from "@/components/ui/ProductCard";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { EmptyNotice } from "@/components/ui/EmptyNotice";
 import { useFavorites } from "@/context/FavoritesContext";
 
 export default function FavoritesPage() {
@@ -32,7 +32,7 @@ export default function FavoritesPage() {
         </h1>
 
         {favorites.length === 0 ? (
-          <EmptyState
+          <EmptyNotice
             title="В избранном пока пусто"
             description="Нажмите на сердечко у товара, чтобы добавить его сюда"
           />

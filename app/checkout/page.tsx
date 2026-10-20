@@ -8,7 +8,7 @@ import { CheckCircle2, ChevronDown, MapPin } from "lucide-react";
 import { styles } from "@/styles/index.styles";
 import type { RootState } from "@/lib/store";
 import { useCart } from "@/context/CartContext";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { EmptyNotice } from "@/components/ui/EmptyNotice";
 import { useCreateOrderMutation, useGetProfileQuery } from "@/lib/api/userApi";
 import { useGetPromotionsQuery } from "@/lib/api/promotionsApi";
 import { formatApiError } from "@/lib/apiError";
@@ -287,7 +287,7 @@ export default function CheckoutPage() {
 
         {cartItems.length === 0 ? (
           <div>
-            <EmptyState
+            <EmptyNotice
               title="Корзина пуста"
               description="Добавьте товары в корзину, чтобы оформить заказ"
             />

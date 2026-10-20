@@ -17,7 +17,7 @@ import {
 import { styles } from '@/styles/index.styles';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
-import CartDrawer from '@/components/cart/CartDrawer';
+import CartSidePanel from '@/components/cart/CartSidePanel';
 import { useGetCategoriesQuery } from '@/lib/api/apiSlice';
 
 const navItems = [
@@ -340,7 +340,7 @@ export default function Header() {
       </div>
 
       {/* Savatcha */}
-      <CartDrawer open={isCartOpen} onClose={closeCart} />
+      <CartSidePanel open={isCartOpen} onClose={closeCart} />
 
       {/* Mobile/Tablet Sidebar Menu */}
       {isMobileMenuOpen && (

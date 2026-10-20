@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { styles } from "@/styles/index.styles";
 import ProductCard from "@/components/ui/ProductCard";
 import { Product } from "@/types/product";
-import { EmptyState } from "../ui/EmptyState";
+import { EmptyNotice } from "../ui/EmptyNotice";
 
 const filters = [
   { label: "Все товары", value: "all" },
@@ -60,7 +60,7 @@ export const HitsSection = ({ products }: { products: Product[] }) => {
         {/* Carousel */}
         {/* Carousel */}
 {filteredProducts.length === 0 ? (
-  <EmptyState />
+  <EmptyNotice />
 ) : (
         <div className="relative">
           <div

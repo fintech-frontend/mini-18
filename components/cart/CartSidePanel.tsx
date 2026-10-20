@@ -8,7 +8,7 @@ import { useCart } from "@/context/CartContext";
 
 const formatPrice = (value: number) => `${value.toLocaleString("ru-RU")} ₽`;
 
-export default function CartDrawer({
+export default function CartSidePanel({
   open,
   onClose,
 }: {

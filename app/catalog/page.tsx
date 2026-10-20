@@ -1,5 +1,5 @@
-import CatalogView from "@/components/catalog/CatalogView";
+import CatalogListing from "@/components/catalog/CatalogListing";
 
 export default function CatalogPage() {
-  return <CatalogView />;
+  return <CatalogListing />;
 }

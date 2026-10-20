@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { styles } from "@/styles/index.styles";
 import ProductCard from "@/components/ui/ProductCard";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { EmptyNotice } from "@/components/ui/EmptyNotice";
 import { useGetCategoriesQuery, useGetProductsQuery } from "@/lib/api/apiSlice";
 import { mapApiProductToProduct } from "@/lib/adapters/products";
 import { formatApiError } from "@/lib/apiError";
@@ -20,7 +20,7 @@ const SORTS = [
 ];
 
 /** Katalog: slug berilsa — shu kategoriya mahsulotlari, aks holda hammasi */
-export default function CatalogView({ slug }: { slug?: string }) {
+export default function CatalogListing({ slug }: { slug?: string }) {
   const [page, setPage] = useState(1);
   const [ordering, setOrdering] = useState(SORTS[0].id);
 
@@ -118,7 +118,7 @@ export default function CatalogView({ slug }: { slug?: string }) {
             Не удалось загрузить товары: {formatApiError(error)}
           </p>
         ) : products.length === 0 ? (
-          <EmptyState />
+          <EmptyNotice />
         ) : (
           <div
             className={`grid grid-cols-2 gap-3 transition-opacity sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 ${

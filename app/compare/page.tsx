@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Trash2, Heart, ShoppingCart, ChevronRight, ChevronDown } from "lucide-react";
 import { styles } from "@/styles/index.styles";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { EmptyNotice } from "@/components/ui/EmptyNotice";
 import { useCompare } from "@/context/CompareContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { Product } from "@/types/product";
@@ -78,7 +78,7 @@ const specRows: Row[] = useMemo(() => {
         <h1 className="mb-6 text-xl font-bold text-gray-900 sm:text-2xl">
           Сравнение
         </h1>
-        <EmptyState
+        <EmptyNotice
           title="Список сравнения пуст"
           description="Добавьте товары для сравнения с помощью значка на карточке товара"
         />

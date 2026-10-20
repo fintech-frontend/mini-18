@@ -1,5 +1,5 @@
 "use client";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { EmptyNotice } from "@/components/ui/EmptyNotice";
 import { useMemo, useState } from "react";
 import { styles } from "@/styles/index.styles";
 import ProductCard from "@/components/ui/ProductCard";
@@ -44,7 +44,7 @@ export const BestOffers = ({ products }: { products: Product[] }) => {
         </div>
 
         {filteredProducts.length === 0 ? (
-          <EmptyState />
+          <EmptyNotice />
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
             {filteredProducts.map((product) => (
