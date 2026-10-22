@@ -53,7 +53,8 @@ const toImageUrl = (src?: string | null) => {
 const formatDiscount = (d?: string | number | null) => {
   if (d === null || d === undefined || d === "") return "";
   const s = String(d);
-  return /^-?\d+(\.\d+)?$/.test(s) ? `-${s.replace("-", "")}%` : s;
+  // "10.00" → "-10%", "12.50" → "-12.5%"
+  return /^-?\d+(\.\d+)?$/.test(s) ? `-${Math.abs(Number(s))}%` : s;
 };
 
 const formatDate = (value?: string | null) => {

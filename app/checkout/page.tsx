@@ -14,6 +14,7 @@ import { useGetPromotionsQuery } from "@/lib/api/promotionsApi";
 import { formatApiError } from "@/lib/apiError";
 import { saveOrderDetails } from "@/lib/orderHistory";
 import { formatPhone, isPhoneComplete } from "@/lib/phone";
+import CardPayment from "@/components/checkout/CardPayment";
 
 /* Hudud/shahar uchun API endpoint yo'q — vaqtincha statik ro'yxat */
 const REGIONS: Record<string, string[]> = {
@@ -108,9 +109,13 @@ export default function CheckoutPage() {
   const [createAccount, setCreateAccount] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [placedOrder, setPlacedOrder] = useState<{ number: string; register: boolean } | null>(
-    null
-  );
+  const [placedOrder, setPlacedOrder] = useState<{
+    number: string;
+    register: boolean;
+    amount: number;
+    // "card" tanlansa: to'lov kutilmoqda → paid / later
+    payment: "none" | "pending" | "paid" | "later";
+  } | null>(null);
 
   // Kirgan foydalanuvchi ma'lumotlarini oldindan to'ldirish
   useEffect(() => {
@@ -207,7 +212,12 @@ export default function CheckoutPage() {
         total,
       });
       clearCart();
-      setPlacedOrder({ number, register: createAccount && !isLoggedIn });
+      setPlacedOrder({
+        number,
+        register: createAccount && !isLoggedIn,
+        amount: total,
+        payment: payment === "card" ? "pending" : "none",
+      });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       const status = (err as { status?: number }).status;
@@ -224,6 +234,22 @@ export default function CheckoutPage() {
     }
   };
 
+  /* ---------- Karta bilan to'lov ---------- */
+  if (placedOrder?.payment === "pending") {
+    return (
+      <div className="bg-white">
+        <div className={`${styles.container} py-10 sm:py-16`}>
+          <CardPayment
+            orderNumber={placedOrder.number}
+            amount={placedOrder.amount}
+            onPaid={() => setPlacedOrder({ ...placedOrder, payment: "paid" })}
+            onSkip={() => setPlacedOrder({ ...placedOrder, payment: "later" })}
+          />
+        </div>
+      </div>
+    );
+  }
+
   /* ---------- Buyurtma qabul qilindi ---------- */
   if (placedOrder) {
     return (
@@ -238,6 +264,16 @@ export default function CheckoutPage() {
               Номер вашего заказа: <b className="text-gray-900">№ {placedOrder.number}</b>.
               Наш менеджер свяжется с вами для подтверждения.
             </p>
+            {placedOrder.payment === "paid" && (
+              <p className="-mt-3 mb-6 rounded-md bg-green-50 px-4 py-2 text-sm text-green-700">
+                Оплата прошла успешно
+              </p>
+            )}
+            {placedOrder.payment === "later" && (
+              <p className="-mt-3 mb-6 rounded-md bg-amber-50 px-4 py-2 text-sm text-amber-700">
+                Заказ ожидает оплаты — оплатить можно при получении
+              </p>
+            )}
             <div className="flex flex-wrap justify-center gap-3">
               <Link
                 href="/"
