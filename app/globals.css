@@ -1,13 +1,1 @@
-
 @import "tailwindcss";
-
-
-
-   @theme inline {
-  --font-helvetica:var(--font-helvetica)
-}
-body {
-  background: white;
-  color: #111827;
-  font-family: Arial, helvetica, sans-serif;
-}

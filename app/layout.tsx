@@ -2,6 +2,12 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+import { Providers } from "./providers";
+import { FavoritesProvider } from "@/context/FavoritesContext";
+import { CompareProvider } from "@/context/CompareContext";
+
+import SiteShell from "@/components/SiteShell";
+import { CartProvider } from "@/context/CartContext";
 
 const helvetica = localFont({
   src: [
@@ -26,7 +32,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Next App",
+  title: "O! Company",
   description: "Next.js",
 };
 
@@ -35,10 +41,23 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
-      lang="en"
+      lang="ru"
       className={`${geistSans.variable} ${geistMono.variable} ${helvetica.variable}`}
     >
-      <body >{children}</body>
+      <body className="min-h-screen flex flex-col antialiased overflow-x-clip">
+        <Providers>
+          <FavoritesProvider>
+            <CompareProvider>
+              <CartProvider>
+
+                <SiteShell>{children}</SiteShell>
+
+              </CartProvider>
+            </CompareProvider>
+          </FavoritesProvider>
+        </Providers>
+      </body>
     </html>
   );
 }
+
