@@ -1,65 +1,87 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
-import { styles } from "@/styles/index.styles"; // Agar loyihangizda bo'lsa, moslab olasiz
 
-export default function NotFoundPage() {
+import BackButton from "@/components/ui/BackButton";
+import { styles } from "@/styles/index.styles";
+
+export const metadata: Metadata = {
+  title: "Страница не найдена — Стройоптторг",
+};
+
+/** Figma'dagi "404" vektori (shrift emas) — soyasi 21px pastga-o'ngga surilgan */
+const DIGITS = [
+  "M190.412 153.85V196.566H156.384V254.848H108.6V196.566H0V149.144L110.048 0.724012H156.384V153.85H190.412ZM108.6 153.85V59.73L41.268 153.85H108.6Z",
+  "M297.442 0C370.204 0 390.114 70.228 390.114 129.958C390.114 210.322 355.362 259.192 297.804 259.192C239.16 259.192 204.046 211.046 204.046 129.958C204.046 70.228 225.404 0 297.442 0ZM297.08 42.354C254.726 42.354 254.726 102.446 254.726 132.492C254.726 190.05 268.482 217.562 297.442 217.562C325.678 217.562 339.434 188.964 339.434 129.958C339.434 69.504 326.402 42.354 297.08 42.354Z",
+  "M592.713 153.85V196.566H558.685V254.848H510.901V196.566H402.301V149.144L512.349 0.724012H558.685V153.85H592.713ZM510.901 153.85V59.73L443.569 153.85H510.901Z",
+];
+
+function Illustration404({ className }: { className?: string }) {
   return (
-    <section className={`${styles.container || "max-w-[1600px] mx-auto"} py-6`}>
-      {/* Navigatsiya (Breadcrumb) */}
-      <nav className="mb-8 md:mb-9.5 text-[13px] md:text-[15px]">
-        <Link
-          href="/"
-          className="hover:text-blue-600 transition-colors text-[#2C333D]"
-        >
+    <svg
+      viewBox="0 0 614 281"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      className={className}
+    >
+      <g transform="translate(21 21)" fill="#DCECFE">
+        {DIGITS.map((d) => (
+          <path key={d} d={d} />
+        ))}
+      </g>
+      <g fill="#186FD4">
+        {DIGITS.map((d) => (
+          <path key={d} d={d} />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+const button =
+  "flex h-16 w-full items-center justify-center rounded-lg text-center transition-colors md:w-[290px] lg:w-[219px]";
+
+/**
+ * 404 sahifasi (Figma: 404 / 404.768 / 404.360).
+ * 360–1023: tugmalar ustma-ust; 1024+: yonma-yon, "404" kattaroq.
+ */
+export default function NotFound() {
+  return (
+    <section className={`${styles.container} pb-20 lg:pb-[110px]`}>
+      <nav
+        aria-label="Хлебные крошки"
+        className="pt-3 text-[13px] leading-5 text-[#91969D] lg:pt-[18px] lg:text-[15px]"
+      >
+        <Link href="/" className="text-[#2C333D] transition-colors hover:text-[#186FD4]">
           Стройоптторг
-        </Link>{" "}
-        / <span className="text-[#91969D]">Страница не найдена</span>
+        </Link>
+        <span className="mx-2.5 lg:mx-[15px]">/</span>
+        <span aria-current="page">Страница не найдена</span>
       </nav>
 
-      {/* Sarlavha: Mobilda o'rtada (text-center), planshet va desktopda chapda (sm:text-left) */}
-      <h1 className="text-[30px] md:text-[48px] text-center sm:text-left font-bold text-[#2C333D] leading-tight">
+      <h1 className="mt-8 text-[30px] leading-[33px] font-bold text-[#2C333D] lg:mt-[38px] lg:text-[48px] lg:leading-[54px]">
         Страница не найдена
       </h1>
 
-      {/* Markaziy kontent bloki */}
-      <div className="flex flex-col items-center justify-center text-center pt-10 pb-20 sm:pt-15 md:py-27.5">
-        {/* 404 raqami va offset(soya) elementlari */}
-        {/* relative inline-flex orqali fon aynan matnga nisbatan joylashadi */}
-        <div className="relative inline-flex items-center justify-center select-none mb-16.5 sm:mb-12.5 md:mb-19">
-          {/* Figmadagi orqa fondagi och ko'k 404 (Soya vazifasida) */}
-          <span className="absolute top-2 left-3 md:top-4 md:left-6 text-[180px] sm:text-[220px] md:text-[260px] font-bold text-[#DCECFE] tracking-wider leading-none -z-10">
-            404
-          </span>
+      <div className="flex flex-col items-center text-center">
+        <Illustration404 className="mt-10 w-[330px] max-w-full md:mt-[60px] lg:mt-[106px] lg:w-[614px]" />
 
-          {/* Katta ko'k 404 raqami (Asosiy) */}
-          <span className="relative text-[180px] sm:text-[220px] md:text-[260px] font-bold text-[#186FD4] tracking-wider leading-none">
-            404
-          </span>
-        </div>
-
-        {/* Izoh matni */}
-        <p className="w-82.5 sm:w-179.5 lg:w-181.75 max-w-full text-[16px] md:text-[18px] text-[#555B63] leading-relaxed mx-auto mb-13.75 sm:mb-10 md:mb-13.75">
-          Запрашиваемая страница не найдена. Возможно она была удалена, либо её
-          адрес был изменен. Попробуйте воспользоваться поиском.
+        <p className="mt-[55px] max-w-[727px] text-[16px] leading-6 text-[#535557] md:mt-10 lg:mt-[55px] lg:text-[18px] lg:leading-[29px]">
+          Запрашиваемая страница не найдена. Возможно она была удалена, либо
+          её адрес был изменен. Попробуйте воспользоваться поиском.
         </p>
 
-        {/* Tugmalar guruhi */}
-        <div className="flex flex-col md:flex-row items-center justify-center gap-3.75 w-full">
-          {/* Ortga qaytish tugmasi */}
-          <button
-            onClick={() => window.history.back()}
-            className="w-full h-16 min-w-45 sm:w-72.5 md:w-54.75 rounded-lg text-[14px] font-bold text-[#186FD4] bg-[#F6F8FB] hover:bg-blue-50 transition-colors cursor-pointer text-center"
+        <div className="mt-[55px] flex w-full flex-col items-center gap-[15px] md:mt-10 lg:mt-[55px] lg:w-auto lg:flex-row">
+          <BackButton
+            className={`${button} bg-[#F6F8FB] text-[15px] font-[550] text-[#117FE3] hover:bg-[#EAF1FA]`}
           >
             Вернуться назад
-          </button>
-
-          {/* Asosiy sahifaga o'tish tugmasi */}
+          </BackButton>
           <Link
             href="/"
-            className="w-full h-16 min-w-45 sm:w-72.5 md:w-54.75 rounded-lg bg-[#186FD4] text-[14px] font-bold text-white hover:bg-blue-700 transition-colors shadow-sm text-center flex items-center justify-center"
+            className={`${button} bg-[#186FD4] text-[13px] leading-[17px] font-bold text-white uppercase hover:bg-[#0F67D0]`}
           >
-            НА ГЛАВНУЮ
+            На главную
           </Link>
         </div>
       </div>
