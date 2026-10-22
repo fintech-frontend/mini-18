@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import OCompnyImg from "../../assets/oCompnyImg.png";
+import { styles } from "@/styles/index.styles";
 
 /* «О компании» — rasm va kompaniya haqida matn */
 export default function AboutHero() {
@@ -20,7 +21,7 @@ export default function AboutHero() {
           </div>
 
           {/* TEXT */}
-          <div className="relative mx-auto w-[90%] max-w-405 py-3 lg:min-h-110 lg:py-4">
+          <div className={`${styles.container} relative py-3 lg:min-h-110 lg:py-4`}>
             <nav className="mb-6 text-[12px] text-[#555] lg:mb-8">
               <Link href="/" className="hover:text-[#1D73E8]">Стройоптторг</Link>
               <span className="mx-3 text-[#999]">/</span>
