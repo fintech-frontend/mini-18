@@ -1,4 +1,5 @@
 import type { ApiProduct } from "@/types/apiTypes";
+import type { Product as ShopProduct } from "@/types/product";
 import type { Product } from "@/types/productsTypes";
 
 const toNumber = (value: string | number | null | undefined) => {
@@ -29,7 +30,6 @@ export function mapApiProduct(api: ApiProduct): Product {
   const price = toNumber(api.price);
   const oldPrice = api.old_price ? toNumber(api.old_price) : undefined;
   const image = api.image_url ?? "";
-  const gallery = [image, ...(api.images ?? [])].filter(Boolean);
 
   return {
     id: api.id,
@@ -52,17 +52,52 @@ export function mapApiProduct(api: ApiProduct): Product {
     length: toNumber(api.length_mm),
     width: toNumber(api.width_mm),
     height: toNumber(api.height_mm),
+    weight: toNumber(api.weight_kg) || undefined,
 
     image,
-    gallery: gallery.length > 1 ? gallery : undefined,
 
     hit: api.is_hit,
-    description: api.description || undefined,
-    stock: api.stock_quantity,
-
-    rating: api.rating_avg ?? undefined,
-    reviewsCount: api.reviews_count,
 
     specs: toSpecs(api.attributes),
+  };
+}
+
+const SHOP_PLACEHOLDER_IMAGE = "/assets/images/placeholder.svg";
+
+/**
+ * Katalog mahsulotini savat / izbrannoe / taqqoslash (context/*) turiga o'tkazadi.
+ * Xususiyatlar ro'yxati lib/adapters/products.ts (mapApiProductToProduct) bilan bir xil,
+ * shunda /compare sahifasida qayerdan qo'shilganidan qat'i nazar bir xil ko'rinadi.
+ */
+export function toShopProduct(product: Product): ShopProduct {
+  const specs: Record<string, string> = { ...product.specs };
+  const extra: [string, string | number | undefined][] = [
+    ["Материал", product.material],
+    ["Цвет", product.color],
+    ["Длина, мм", product.length],
+    ["Ширина, мм", product.width],
+    ["Высота, мм", product.height],
+    ["Вес, кг", product.weight],
+  ];
+  extra.forEach(([key, value]) => {
+    if (value) specs[key] = String(value);
+  });
+
+  return {
+    id: product.id,
+    slug: product.slug,
+    title: product.title,
+    article: product.article,
+    price: product.price,
+    oldPrice: product.oldPrice,
+    discountPercentage: product.discount,
+    imageUrl: product.image || SHOP_PLACEHOLDER_IMAGE,
+    isHit: product.hit,
+    section: product.hit ? "hits" : undefined,
+    // main'dagi mapApiProductToProduct kabi: /compare kategoriya bo'yicha guruhlaydi
+    category: (product.category || undefined) as ShopProduct["category"],
+    brand: product.brand || undefined,
+    productType: product.type || product.categoryTitle || undefined,
+    specs,
   };
 }

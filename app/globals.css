@@ -1,12 +1,3 @@
 @import "tailwindcss";
+/* animate-in / fade-in / slide-in klasslari (katalog filtr paneli, sharh rasmlari) */
 @import "tw-animate-css";
-
-@theme inline {
-  --font-helvetica: var(--font-helvetica);
-}
-
-body {
-  background: white;
-  color: #111827;
-  font-family: Arial, helvetica, sans-serif;
-}

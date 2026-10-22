@@ -1,12 +1,11 @@
 import { mapApiProduct } from "@/lib/adapters/product";
-import { ApiError, apiGet, toList, type QueryParams } from "@/lib/api/client";
+import { apiGet, toList, type QueryParams } from "@/lib/api/client";
 import { mapApiFilterOptions } from "@/lib/catalog/filterOptions";
 import type {
   ApiCategory,
   ApiFilterOptions,
   ApiPaginated,
   ApiProduct,
-  ApiReview,
 } from "@/types/apiTypes";
 import type { CatalogQuery, FilterOptions, Product, SortValue } from "@/types/productsTypes";
 
@@ -79,20 +78,6 @@ export async function fetchProducts(
   };
 }
 
-/** id yoki slug bo'yicha; topilmasa null */
-export async function fetchProduct(
-  idOrSlug: string | number,
-  init?: { signal?: AbortSignal; revalidate?: number },
-): Promise<Product | null> {
-  try {
-    const data = await apiGet<ApiProduct>(`products/${idOrSlug}/`, undefined, init);
-    return mapApiProduct(data);
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return null;
-    throw error;
-  }
-}
-
 export async function fetchFilterOptions(
   category?: string,
   init?: { signal?: AbortSignal },
@@ -108,27 +93,4 @@ export async function fetchCategories(): Promise<ApiCategory[]> {
     { revalidate: 300 },
   );
   return toList(data).filter((category) => category.is_active);
-}
-
-/** Shu kategoriyadan o'xshash mahsulotlar: avval bir xil turdagilar */
-export async function fetchSimilarProducts(product: Product, limit = 4) {
-  const { items } = await fetchProducts(
-    { category: product.category, page_size: limit * 3 },
-    { revalidate: 300 },
-  );
-  return items
-    .filter((item) => item.id !== product.id)
-    .sort((a, b) => Number(b.type === product.type) - Number(a.type === product.type))
-    .slice(0, limit);
-}
-
-export async function fetchProductReviews(
-  productId: number,
-  init?: { signal?: AbortSignal },
-): Promise<ApiPaginated<ApiReview>> {
-  return apiGet<ApiPaginated<ApiReview>>(
-    "reviews/",
-    { product: productId, page_size: 20 },
-    init,
-  );
 }

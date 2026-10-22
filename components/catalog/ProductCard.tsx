@@ -6,10 +6,11 @@ import { Check, ShoppingCart } from "lucide-react";
 import { FiBarChart2 } from "react-icons/fi";
 import { GoHeart, GoHeartFill } from "react-icons/go";
 
-import { useCart } from "@/hooks/useCart";
-import { MAX_COMPARE_ITEMS, useCompare } from "@/hooks/useCompare";
-import { useFavorites } from "@/hooks/useFavorites";
+import { useCart } from "@/context/CartContext";
+import { useCompare } from "@/context/CompareContext";
+import { useFavorites } from "@/context/FavoritesContext";
 import ProductImage from "@/components/ui/ProductImage";
+import { toShopProduct } from "@/lib/adapters/product";
 import { routes } from "@/lib/routes";
 import { cn, formatPrice } from "@/lib/utils";
 import type { Product } from "@/types/productsTypes";
@@ -21,6 +22,9 @@ type Props = {
 /** Taqqoslash limiti haqidagi xabar necha ms ko'rinib turadi */
 const LIMIT_NOTICE_MS = 2500;
 
+/** context/CompareContext dagi MAX_COMPARE_ITEMS bilan bir xil */
+const MAX_COMPARE_ITEMS = 4;
+
 const buyButton =
   "flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-[6px] text-[14px] font-medium text-white transition-colors md:max-w-[130px] md:text-[15px]";
 
@@ -28,12 +32,13 @@ const iconButton =
   "flex size-10 shrink-0 items-center justify-center rounded-[6px] border text-[18px] transition-colors";
 
 export default function ProductCard({ product }: Props) {
-  const { addToCart, isInCart } = useCart();
+  const { addToCart, cartItems } = useCart();
   const { toggleFavorite, isFavorite: checkFavorite } = useFavorites();
-  const { toggleCompare, isInCompare } = useCompare();
+  const { compareItems, toggleCompare, isInCompare } = useCompare();
   const [showLimitNotice, setShowLimitNotice] = useState(false);
 
-  const inCart = isInCart(product.id);
+  const cartQuantity =
+    cartItems.find((item) => item.id === product.id)?.quantity ?? 0;
   const isFavorite = checkFavorite(product.id);
   const inCompare = isInCompare(product.id);
 
@@ -44,12 +49,17 @@ export default function ProductCard({ product }: Props) {
   }, [showLimitNotice]);
 
   const handleCompare = () => {
-    if (toggleCompare(product.id) === "limit") setShowLimitNotice(true);
+    // Context limitdan oshganda jim turadi — foydalanuvchiga sababini ko'rsatamiz
+    if (!inCompare && compareItems.length >= MAX_COMPARE_ITEMS) {
+      setShowLimitNotice(true);
+      return;
+    }
+    toggleCompare(toShopProduct(product));
   };
 
   return (
     <article className="group flex min-w-0 flex-col">
-      <Link href={routes.product(product.id)} className="block">
+      <Link href={routes.product(product.slug)} className="block">
         {/* IMAGE */}
         <div className="relative h-[150px] md:h-[200px] xl:h-[220px]">
           {product.hit && (
@@ -98,31 +108,38 @@ export default function ProductCard({ product }: Props) {
 
       {/* ACTIONS */}
       <div className="mt-3 flex items-center gap-2 md:gap-2.5">
-        {/* Savatda bo'lsa qayta qo'shmaymiz — savat sahifasiga olib boradi */}
-        {inCart ? (
-          <Link
-            href="/cart"
-            aria-label={`${product.title} — в корзине, перейти в корзину`}
-            className={cn(buyButton, "bg-[#1AA36F] hover:bg-[#178F61]")}
-          >
-            <Check className="size-[18px] shrink-0" />
-            <span className="hidden md:inline">В корзине</span>
-          </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={() => addToCart(product.id)}
-            aria-label={`Купить ${product.title}`}
-            className={cn(buyButton, "bg-[#186FD4] hover:bg-[#0F67D0]")}
-          >
-            <ShoppingCart className="size-[18px] shrink-0" />
-            <span className="hidden md:inline">Купить</span>
-          </button>
-        )}
+        {/* Savatda bo'lsa yana bittaga ko'payadi (main'dagi ProductCard kabi) */}
+        <button
+          type="button"
+          onClick={() => addToCart(toShopProduct(product))}
+          aria-label={
+            cartQuantity > 0
+              ? `${product.title} — в корзине ${cartQuantity} шт., добавить ещё`
+              : `Купить ${product.title}`
+          }
+          className={cn(
+            buyButton,
+            cartQuantity > 0
+              ? "bg-[#1AA36F] hover:bg-[#178F61]"
+              : "bg-[#186FD4] hover:bg-[#0F67D0]",
+          )}
+        >
+          {cartQuantity > 0 ? (
+            <>
+              <Check className="size-[18px] shrink-0" />
+              <span className="hidden truncate md:inline">В корзине ({cartQuantity})</span>
+            </>
+          ) : (
+            <>
+              <ShoppingCart className="size-[18px] shrink-0" />
+              <span className="hidden md:inline">Купить</span>
+            </>
+          )}
+        </button>
 
         <button
           type="button"
-          onClick={() => toggleFavorite(product.id)}
+          onClick={() => toggleFavorite(toShopProduct(product))}
           aria-label={isFavorite ? "Убрать из избранного" : "В избранное"}
           aria-pressed={isFavorite}
           className={cn(

@@ -20,18 +20,11 @@ export type Product = {
   length: number;
   width: number;
   height: number;
+  weight?: number;
 
   image: string;
-  gallery?: string[];
 
   hit?: boolean;
-
-  description?: string;
-
-  stock?: number;
-
-  rating?: number;
-  reviewsCount?: number;
 
   specs?: Record<string, string>;
 };

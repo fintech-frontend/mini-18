@@ -69,16 +69,6 @@ export type ApiCategory = {
   parent: number | null;
 };
 
-export type ApiReview = {
-  id: number;
-  product: number;
-  product_name: string;
-  user_name: string;
-  rating: number;
-  text: string;
-  created_at: string;
-};
-
 /** Do'kon haqidagi sharh — /store-reviews/ (mahsulot sharhi emas) */
 export type ApiStoreReview = {
   id: number;

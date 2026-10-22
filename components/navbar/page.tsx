@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useCallback, useState, useSyncExternalStore } from 'react';
+import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/lib/store';
 import { 
   Menu, 
   Search, 
@@ -14,13 +15,13 @@ import {
   X 
 } from 'lucide-react';
 import { styles } from '@/styles/index.styles';
-import CartDrawer from '@/components/cart/CartDrawer';
-import { useCart } from '@/hooks/useCart';
-import { useFavorites } from '@/hooks/useFavorites';
-import { routes } from '@/lib/routes';
+import { useCart } from '@/context/CartContext';
+import { useFavorites } from '@/context/FavoritesContext';
+import CartSidePanel from '@/components/cart/CartSidePanel';
+import { useGetCategoriesQuery } from '@/lib/api/apiSlice';
 
 const navItems = [
-  { label: 'О компании', uppercaseLabel: 'О КОМПАНИИ', href: '/about' },
+  { label: 'О компании', uppercaseLabel: 'О КОМПАНИИ', href: '/Ocompany' },
   { label: 'Оплата', uppercaseLabel: 'ОПЛАТА', href: '/payment' },
   { label: 'Доставка', uppercaseLabel: 'ДОСТАВКА', href: '/delivery' },
   { label: 'Возврат', uppercaseLabel: 'ВОЗВРАТ', href: '/returns' },
@@ -30,7 +31,8 @@ const navItems = [
   { label: 'Контакты', uppercaseLabel: 'КОНТАКТЫ', href: '/contacts' },
 ];
 
-const catalogCategories = [
+// API'dan kategoriyalar kelmasa ko'rsatiladigan ro'yxat
+const fallbackCategories = [
   { title: 'Строительные материалы', href: '/catalog/building-materials' },
   { title: 'Отделочные материалы', href: '/catalog/finishing-materials' },
   { title: 'Электроинструмент', href: '/catalog/power-tools' },
@@ -38,49 +40,34 @@ const catalogCategories = [
   { title: 'Сантехника', href: '/catalog/plumbing' },
   { title: 'Сантехника и крепеж', href: '/catalog/fasteners' },
   { title: 'Электротовары', href: '/catalog/electrical' },
-  { title: 'Сад и огород', href: '/catalog/garden' },
+  { title: 'Cад и огород', href: '/catalog/garden' },
 ];
 
-// 360px da qidiruv placeholder'i qisqa bo'ladi (maketdagidek "Поиск...")
-const MOBILE_QUERY = '(max-width: 767px)';
-
-function subscribeToMobile(callback: () => void) {
-  const media = window.matchMedia(MOBILE_QUERY);
-  media.addEventListener('change', callback);
-  return () => media.removeEventListener('change', callback);
-}
-
-function useIsMobile() {
-  return useSyncExternalStore(
-    subscribeToMobile,
-    () => window.matchMedia(MOBILE_QUERY).matches,
-    () => false,
-  );
-}
-
 export default function Header() {
+  const isLoggedIn = useSelector((state: RootState) => !!state.auth.token);
+  const accountHref = isLoggedIn ? "/profile" : "/login";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCallbackOpen, setIsCallbackOpen] = useState(false);
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  const closeCart = useCallback(() => setIsCartOpen(false), []);
-  const router = useRouter();
-
-  // Qidiruv katalogga ?search= bilan o'tadi
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const query = String(new FormData(e.currentTarget).get('search') ?? '').trim();
-    router.push(query ? routes.search(query) : routes.catalog);
-  };
-
-  // Dinamik sanoqlar (localStorage'dagi savat va izbrannoe)
+  // Dinamik sanoqlar (savatcha — umumiy dona soni, sevimlilar — mahsulotlar soni)
   const { totalCount: cartCount } = useCart();
-  const { count: favoritesCount } = useFavorites();
-  const isMobile = useIsMobile();
+  const { favorites } = useFavorites();
+  const favoritesCount = favorites.length;
+  const closeCart = useCallback(() => setIsCartOpen(false), []);
+
+  // Katalog menyusi — admin paneldagi faol kategoriyalar
+  const { data: categoriesData } = useGetCategoriesQuery();
+  const apiCategories = (categoriesData?.results ?? [])
+    .filter((c) => c.is_active)
+    .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name))
+    .map((c) => ({ title: c.name, href: `/catalog/${c.slug}` }));
+  const catalogCategories = apiCategories.length > 0 ? apiCategories : fallbackCategories;
+  const badge = (n: number) => (n > 99 ? '99+' : n);
 
   return (
-    <header className="w-full bg-white border-b border-gray-100 font-sans sticky top-0 z-40 select-none">
+    <header className="  w-full bg-white border-b border-gray-100 font-sans sticky top-0 z-40 select-none">
       
       {/* ================= 1. TOP BAR ================= */}
       <div className={` border-b border-gray-100 bg-white w-full`}>
@@ -94,12 +81,12 @@ export default function Header() {
             aria-label="Открыть меню"
           >
             <Menu className="w-5 h-5 stroke-[2]" />
-            <span className="hidden md:inline font-semibold text-xs text-gray-800">Меню</span>
+            <span className="font-semibold text-xs text-gray-800">Меню</span>
           </button>
 
           {/* Desktop Navigation Links */}
           <nav className="hidden lg:block">
-            <ul className="flex items-center gap-4 xl:gap-8 whitespace-nowrap font-normal">
+            <ul className="flex items-center gap-6 xl:gap-8 font-normal">
               {navItems.map((item, index) => (
                 <li key={index}>
                   <Link
@@ -115,7 +102,7 @@ export default function Header() {
 
           {/* Contacts & Callback Button */}
           <div className="flex items-center gap-3 md:gap-5 xl:gap-6 ml-auto lg:ml-0">
-            <span className="text-gray-400 font-normal hidden md:inline lg:hidden xl:inline text-[11px] lg:text-xs whitespace-nowrap">
+            <span className="text-gray-400 font-normal hidden md:inline text-[11px] lg:text-xs">
               Ежедневно, с 8:00 до 18:00
             </span>
 
@@ -139,12 +126,12 @@ export default function Header() {
       </div>
 
       {/* ================= 2. MAIN HEADER ================= */}
-      <div className={`${styles?.container} py-3 flex flex-col lg:flex-row justify-between gap-3 lg:gap-6 xl:gap-8 lg:items-center relative`}>
+      <div className={`${styles?.container} py-3 flex flex-col lg:flex-row justify-between gap-3 lg:gap-8 lg:items-center relative`}>
         
         {/* Logo & Tablet/Mobile Icons */}
         <div className="flex items-center justify-between w-full lg:w-auto">
-          <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 shrink-0">
+          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            <div className="w-9 h-9 md:w-10 md:h-10 shrink-0">
               <svg viewBox="0 0 100 100" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="50" cy="50" r="44" stroke="#D93829" strokeWidth="8" />
                 <path d="M30 68V48L50 32L70 48V68H30Z" fill="#1B365D" />
@@ -152,11 +139,11 @@ export default function Header() {
               </svg>
             </div>
 
-            <div className="flex flex-col">
-              <span className="text-[#D93829] font-black text-[15px] sm:text-lg md:text-xl tracking-tight uppercase leading-none">
+            <div className="sm:flex hidden flex-col">
+              <span className="text-[#D93829] font-black text-lg md:text-xl tracking-tight uppercase leading-none">
                 СТРОЙОПТТОРГ
               </span>
-              <span className="text-[6.5px] sm:text-[8.5px] md:text-[9px] text-[#1B365D] font-bold uppercase tracking-wide sm:tracking-wider mt-1 leading-none">
+              <span className="text-[8.5px] md:text-[9px] text-[#1B365D] font-bold uppercase tracking-wider mt-1 leading-none">
                 Всё для строительства и ремонта
               </span>
             </div>
@@ -164,14 +151,14 @@ export default function Header() {
 
           {/* Tablet Icon Menu (768px - 1024px) */}
           <div className="hidden md:flex lg:hidden items-center gap-5 md:gap-6 text-gray-700 shrink-0">
-            <Link href="/promotions" className="flex flex-col items-center gap-0.5 hover:text-[#2563EB] transition-colors group">
+            <Link href="/akcii" className="flex flex-col items-center gap-0.5 hover:text-[#2563EB] transition-colors group">
               <Gift className="w-5 h-5 stroke-[1.5] group-hover:scale-105 transition-transform" />
               <span className="text-[10px] text-gray-500 font-normal">Все акции</span>
             </Link>
 
-            <Link href="/login" className="flex flex-col items-center gap-0.5 hover:text-[#2563EB] transition-colors group">
+            <Link href={accountHref} className="flex flex-col items-center gap-0.5 hover:text-[#2563EB] transition-colors group">
               <User className="w-5 h-5 stroke-[1.5] group-hover:scale-105 transition-transform" />
-              <span className="text-[10px] text-gray-500 font-normal">Войти</span>
+              <span className="text-[10px] text-gray-500 font-normal">{isLoggedIn ? "Кабинет" : "Войти"}</span>
             </Link>
 
             <Link href="/compare" className="flex flex-col items-center gap-0.5 hover:text-[#2563EB] transition-colors group">
@@ -183,8 +170,8 @@ export default function Header() {
               <div className="relative">
                 <Heart className="w-5 h-5 stroke-[1.5] group-hover:scale-105 transition-transform" />
                 {favoritesCount > 0 && (
-                  <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                    {favoritesCount}
+                  <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold min-w-3.5 h-3.5 px-0.5 rounded-full flex items-center justify-center">
+                    {badge(favoritesCount)}
                   </span>
                 )}
               </div>
@@ -199,8 +186,8 @@ export default function Header() {
               <div className="relative">
                 <ShoppingCart className="w-5 h-5 stroke-[1.5] group-hover:scale-105 transition-transform" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                    {cartCount}
+                  <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold min-w-3.5 h-3.5 px-0.5 rounded-full flex items-center justify-center">
+                    {badge(cartCount)}
                   </span>
                 )}
               </div>
@@ -209,8 +196,8 @@ export default function Header() {
           </div>
 
           {/* Mobile Icon Menu (< 768px) */}
-          <div className="flex md:hidden items-center gap-2 text-gray-700">
-            <Link href="/login" className="p-1 hover:text-[#2563EB]">
+          <div className="flex md:hidden items-center gap-3 text-gray-700">
+            <Link href={accountHref} className="p-1 hover:text-[#2563EB]">
               <User className="w-5 h-5 stroke-[1.8]" />
             </Link>
             <Link href="/compare" className="p-1 hover:text-[#2563EB]">
@@ -219,8 +206,8 @@ export default function Header() {
             <Link href="/favorites" className="p-1 hover:text-[#2563EB] relative">
               <Heart className="w-5 h-5 stroke-[1.8]" />
               {favoritesCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-[#D93829] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {favoritesCount}
+                <span className="absolute -top-1.5 -right-1.5 bg-[#D93829] text-white text-[9px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                  {badge(favoritesCount)}
                 </span>
               )}
             </Link>
@@ -231,8 +218,8 @@ export default function Header() {
             >
               <ShoppingCart className="w-5 h-5 stroke-[1.8]" />
               {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-[#D93829] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {cartCount}
+                <span className="absolute -top-1.5 -right-1.5 bg-[#D93829] text-white text-[9px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                  {badge(cartCount)}
                 </span>
               )}
             </button>
@@ -265,7 +252,14 @@ export default function Header() {
               />
               
               <div className="absolute top-12 md:top-14 left-0 w-72 bg-white rounded-xl shadow-xl border border-gray-100 py-3 z-20">
-                <div className="flex flex-col">
+                <div className="flex max-h-[70vh] flex-col overflow-y-auto">
+                  <Link
+                    href="/catalog"
+                    onClick={() => setIsCatalogOpen(false)}
+                    className="px-5 py-2.5 text-xs font-bold text-[#2563EB] hover:bg-[#EEF4FF] transition-colors"
+                  >
+                    Все товары
+                  </Link>
                   {catalogCategories.map((category, idx) => (
                     <Link
                       key={idx}
@@ -281,12 +275,10 @@ export default function Header() {
             </>
           )}
 
-          <form role="search" className="flex-1 relative flex items-center h-10 md:h-11" onSubmit={handleSearch}>
+          <form className="flex-1 relative flex items-center h-10 md:h-11" onSubmit={(e) => e.preventDefault()}>
             <input
-              type="search"
-              name="search"
-              placeholder={isMobile ? 'Поиск...' : 'Найти среди 50000 товаров. Например: Дрель Bosch'}
-              aria-label="Поиск по каталогу"
+              type="text"
+              placeholder="Найти среди 50000 товаров. Например: Дрель Bosch"
               className="w-full h-full border-2 border-[#2563EB] rounded-lg pl-3 md:pl-4 pr-11 md:pr-12 text-xs text-gray-800 placeholder-gray-400 focus:outline-none bg-white"
             />
             <button
@@ -300,32 +292,32 @@ export default function Header() {
         </div>
 
         {/* Desktop Right Icons (1024px+) */}
-        <div className="hidden lg:flex items-center gap-5 xl:gap-7 text-gray-700 shrink-0">
-          <Link href="/promotions" className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">
+        <div className="hidden lg:flex items-center gap-6 xl:gap-7 text-gray-700 shrink-0">
+          <Link href="/akcii" className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">
             <Gift className="w-6 h-6 stroke-[1.5] group-hover:scale-105 transition-transform" />
-            <span className="hidden xl:inline text-[11px] text-gray-500 font-normal">Все акции</span>
+            <span className="text-[11px] text-gray-500 font-normal">Все акции</span>
           </Link>
 
-          <Link href="/login" className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">
+          <Link href={accountHref} className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">
             <User className="w-6 h-6 stroke-[1.5] group-hover:scale-105 transition-transform" />
-            <span className="hidden xl:inline text-[11px] text-gray-500 font-normal">Войти</span>
+            <span className="text-[11px] text-gray-500 font-normal">{isLoggedIn ? "Кабинет" : "Войти"}</span>
           </Link>
 
           <Link href="/compare" className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group">
             <BarChart2 className="w-6 h-6 stroke-[1.5] group-hover:scale-105 transition-transform" />
-            <span className="hidden xl:inline text-[11px] text-gray-500 font-normal">Сравнение</span>
+            <span className="text-[11px] text-gray-500 font-normal">Сравнение</span>
           </Link>
 
           <Link href="/favorites" className="flex flex-col items-center gap-1 hover:text-[#2563EB] transition-colors group relative">
             <div className="relative">
               <Heart className="w-6 h-6 stroke-[1.5] group-hover:scale-105 transition-transform" />
               {favoritesCount > 0 && (
-                <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {favoritesCount}
+                <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                  {badge(favoritesCount)}
                 </span>
               )}
             </div>
-            <span className="hidden xl:inline text-[11px] text-gray-500 font-normal">Избранное</span>
+            <span className="text-[11px] text-gray-500 font-normal">Избранное</span>
           </Link>
 
           <button 
@@ -336,19 +328,19 @@ export default function Header() {
             <div className="relative">
               <ShoppingCart className="w-6 h-6 stroke-[1.5] group-hover:scale-105 transition-transform" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {cartCount}
+                <span className="absolute -top-1 -right-2 bg-[#D93829] text-white text-[9px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                  {badge(cartCount)}
                 </span>
               )}
             </div>
-            <span className="hidden xl:inline text-[11px] text-gray-500 font-normal">Корзина</span>
+            <span className="text-[11px] text-gray-500 font-normal">Корзина</span>
           </button>
         </div>
 
       </div>
 
-      {/* Savat paneli */}
-      <CartDrawer isOpen={isCartOpen} onClose={closeCart} />
+      {/* Savatcha */}
+      <CartSidePanel open={isCartOpen} onClose={closeCart} />
 
       {/* Mobile/Tablet Sidebar Menu */}
       {isMobileMenuOpen && (
@@ -372,7 +364,7 @@ export default function Header() {
 
             <nav className="flex-1 overflow-y-auto divide-y divide-gray-100">
               <Link
-                href="/promotions"
+                href="/akcii"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="flex items-center gap-3 px-5 py-3.5 text-xs font-semibold text-gray-900 hover:bg-gray-50 uppercase tracking-wide"
               >

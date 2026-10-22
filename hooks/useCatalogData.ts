@@ -8,7 +8,6 @@ import {
   type ProductPage,
 } from "@/lib/api/catalog";
 import { ApiError, type QueryParams } from "@/lib/api/client";
-import { productCache } from "@/lib/api/productCache";
 import type { FilterOptions } from "@/types/productsTypes";
 
 type State<T> =
@@ -63,7 +62,6 @@ export function useProductPage(params: QueryParams) {
     const timer = setTimeout(() => {
       fetchProducts(JSON.parse(key) as QueryParams, { signal: controller.signal })
         .then((data) => {
-          productCache.prime(data.items);
           setState({ status: "ready", key, data });
           setLastData(data);
         })

@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+import { Providers } from "./providers";
+import { FavoritesProvider } from "@/context/FavoritesContext";
+import { CompareProvider } from "@/context/CompareContext";
 
-import Header from "@/components/navbar/page";
-import FooterWithMenu from "@/components/footer/page";
+import SiteShell from "@/components/SiteShell";
+import { CartProvider } from "@/context/CartContext";
 
 const helvetica = localFont({
   src: [
@@ -29,9 +32,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Стройоптторг — всё для строительства и ремонта",
-  description:
-    "Интернет-магазин строительных и отделочных материалов, инструмента и сантехники.",
+  title: "O! Company",
+  description: "Next.js",
 };
 
 export default function RootLayout({
@@ -42,18 +44,20 @@ export default function RootLayout({
       lang="ru"
       className={`${geistSans.variable} ${geistMono.variable} ${helvetica.variable}`}
     >
-      {/* Barcha visual komponentlar <body> va </body> oralig'ida bo'lishi shart:
-      */}
-      {/* Header / footer ekranning to'liq kengligida, kontent konteyneri sahifalarning o'zida */}
-      <body className="flex min-h-screen flex-col overflow-x-clip antialiased">
-        <Header />
+      <body className="min-h-screen flex flex-col antialiased overflow-x-clip">
+        <Providers>
+          <FavoritesProvider>
+            <CompareProvider>
+              <CartProvider>
 
-        <main className="flex-1">
-          {children}
-        </main>
+                <SiteShell>{children}</SiteShell>
 
-        <FooterWithMenu />
+              </CartProvider>
+            </CompareProvider>
+          </FavoritesProvider>
+        </Providers>
       </body>
     </html>
   );
 }
+
